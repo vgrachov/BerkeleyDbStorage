@@ -29,6 +29,7 @@ import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.comparator.TupleComparator;
 import org.brackit.berkeleydb.tuple.Column;
 
+import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseException;
@@ -62,6 +63,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 	
 	private BerkeleyDBEnvironment(){
 		logger.debug("Init database environment");
+		
 		EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);

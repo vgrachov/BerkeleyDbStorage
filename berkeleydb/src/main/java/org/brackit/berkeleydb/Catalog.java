@@ -15,8 +15,6 @@
  ******************************************************************************/
 package org.brackit.berkeleydb;
 
-import java.util.LinkedList;
-
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.CatalogTupleBinding;
 import org.brackit.berkeleydb.binding.IndexValueCreator;

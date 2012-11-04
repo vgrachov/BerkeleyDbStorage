@@ -34,8 +34,8 @@ public class USER_DB_RANGE_SEARCH {
 	@Test
 	public void rangeSearch(){
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName("USER_TABLE");
-		AtomicInteger leftKey = new AtomicInteger("Login", 9);
-		AtomicInteger rightKey = new AtomicInteger("Login", 9);
+		AtomicInteger leftKey = new AtomicInteger("Login", 1);
+		AtomicInteger rightKey = new AtomicInteger("Login", 4);
 		ITupleCursor cursor = new RangeIndexSearchCursor(schema.getColumns()[4], leftKey, rightKey);
 		cursor.open();
 		Tuple tuple = null;

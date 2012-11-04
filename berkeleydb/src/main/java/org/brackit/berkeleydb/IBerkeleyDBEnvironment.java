@@ -38,7 +38,6 @@ public interface IBerkeleyDBEnvironment {
 	 */
 	public SecondaryDatabase getIndexreference(Column index);
 	
-	@Deprecated
 	public Environment getEnv();
 
 	/**

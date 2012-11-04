@@ -18,5 +18,7 @@ package org.brackit.berkeleydb.tuple;
 public enum ColumnType {
 	String,
 	Integer,
-	Double
+	Double,
+	Char,
+	Date
 }

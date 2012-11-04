@@ -20,17 +20,17 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.DatabaseEntry;
 
-public final class DatabaseEntryFactory {
+public final class DatabaseEntryHelper {
 	
 	private static class DatabaseEntryFactoryHolder{
-		private static DatabaseEntryFactory instance = new DatabaseEntryFactory(); 
+		private static DatabaseEntryHelper instance = new DatabaseEntryHelper(); 
 	}
 	
-	public DatabaseEntryFactory(){
+	public DatabaseEntryHelper(){
 		
 	}
 	
-	public static DatabaseEntryFactory getInstance(){
+	public static DatabaseEntryHelper getInstance(){
 		return DatabaseEntryFactoryHolder.instance;
 	}
 	
@@ -48,16 +48,5 @@ public final class DatabaseEntryFactory {
 		return databaseEntry;
 	}
 
-	public final EntryBinding databaseBinding(ColumnType columnType){
-		if (columnType == ColumnType.String)
-			return TupleBinding.getPrimitiveBinding(String.class);
-		else
-		if (columnType == ColumnType.Integer)
-			return TupleBinding.getPrimitiveBinding(Integer.class);
-		else
-		if (columnType == ColumnType.Double)
-			return TupleBinding.getPrimitiveBinding(Double.class);
-		return null;
-	}
 	
 }

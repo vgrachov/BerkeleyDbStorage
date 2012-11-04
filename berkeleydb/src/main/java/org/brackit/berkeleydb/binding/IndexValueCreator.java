@@ -17,6 +17,8 @@ package org.brackit.berkeleydb.binding;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicChar;
+import org.brackit.berkeleydb.tuple.AtomicDate;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -62,7 +64,13 @@ public final class IndexValueCreator implements SecondaryKeyCreator {
 				if (index.getType() == ColumnType.Double)
 					resultSerialized.writeDouble(((AtomicDouble)fields[i]).getData());
 				else
-					throw new IllegalArgumentException();
+				if (index.getType() == ColumnType.Char)
+					resultSerialized.writeChar(((AtomicChar)fields[i]).getData());
+				else
+				if (index.getType() == ColumnType.Date)
+					resultSerialized.writeLong(((AtomicDate)fields[i]).getData().getTime());
+				else
+					throw new IllegalArgumentException("Can't create index for type "+index.getType());
 			}
 		}
 		result.setData(resultSerialized.toByteArray());

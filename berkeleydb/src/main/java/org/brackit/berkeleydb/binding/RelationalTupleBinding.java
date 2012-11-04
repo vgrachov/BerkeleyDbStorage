@@ -16,12 +16,15 @@
 package org.brackit.berkeleydb.binding;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicChar;
+import org.brackit.berkeleydb.tuple.AtomicDate;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -63,6 +66,14 @@ public class RelationalTupleBinding extends TupleBinding<Tuple> {
 			else
 			if (currentColumn.getType()==ColumnType.Double)
 				fields[i] = new AtomicDouble(currentColumn.getColumnName(), target.readDouble());
+			else
+			if (currentColumn.getType()==ColumnType.Char)
+				fields[i] = new AtomicChar(currentColumn.getColumnName(), target.readChar());
+			else
+			if (currentColumn.getType()==ColumnType.Date)
+				fields[i] = new AtomicDate(currentColumn.getColumnName(), target.readLong());
+			else
+				throw new IllegalArgumentException("Type is not supported");
 		}
 		return new Tuple(fields);
 		
@@ -96,6 +107,13 @@ public class RelationalTupleBinding extends TupleBinding<Tuple> {
 			else
 			if (schema[i].getType() == ColumnType.Double)
 				target.writeDouble ((Double)fields[i].getData() );
+			else
+			if (schema[i].getType() == ColumnType.Char)
+				target.writeChar ((Character)fields[i].getData() );
+			else
+			if (schema[i].getType() == ColumnType.Date)
+				target.writeLong (((Date)fields[i].getData()).getTime());
+			
 		}
 	}
 }
