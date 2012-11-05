@@ -15,14 +15,17 @@
  ******************************************************************************/
 package org.brackit.berkeleydb;
 
+import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.catalog.Catalog;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Column;
 import org.brackit.berkeleydb.tuple.Tuple;
 
 import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
@@ -30,32 +33,39 @@ import com.sleepycat.je.Transaction;
 
 public class DatabaseAccess implements IDatabaseAccess {
 
-	protected final String databaseName;
+	private static final Logger logger = Logger.getLogger(DatabaseAccess.class);
+	
 	protected final Database dataBase;
 	protected final Schema schema;
+	protected final Environment environment;
+	protected RelationalTupleBinding tupleBinding;
 	
 	public DatabaseAccess(String databaseName){
-		this.databaseName = databaseName;
 		this.dataBase = BerkeleyDBEnvironment.getInstance().getDatabasereference(databaseName);
 		this.schema = Catalog.getInstance().getSchemaByDatabaseName(databaseName);
+		this.environment = BerkeleyDBEnvironment.getInstance().getEnv();
+		this.tupleBinding = new RelationalTupleBinding(schema.getColumns());
 	}
 	
-	public boolean insert(Tuple tuple) {
-		Environment environment = BerkeleyDBEnvironment.getInstance().getEnv();
-		Transaction txn = environment.beginTransaction(null, null);
+	public boolean insert(Tuple tuple){
+		Transaction transaction = environment.beginTransaction(null, null);
+		try{
+			boolean insert = insert(tuple,transaction);
+			transaction.commit();
+			return insert;
+		}catch (DatabaseException e) {
+			if (transaction!=null)
+				transaction.abort();
+			return false;
+		}
+	}
+	
+	public boolean insert(Tuple tuple, Transaction transaction) {
 		TupleOutput serializedTupleValues = new TupleOutput();
 		TupleOutput serializedKey = new TupleOutput();
-		RelationalTupleBinding tupleBinding = new RelationalTupleBinding(schema.getColumns());
 		tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValues);
-		try{
-			dataBase.put(txn, new DatabaseEntry(serializedKey.getBufferBytes()), new DatabaseEntry(serializedTupleValues.getBufferBytes()));
-			txn.commit();
-		} catch (Exception e) {
-			
-			if (txn!=null)
-				txn.abort();
-		}
-		return false;
+		dataBase.put(transaction, new DatabaseEntry(serializedKey.toByteArray()), new DatabaseEntry(serializedTupleValues.toByteArray()));
+		return true;
 	}
 	
 	

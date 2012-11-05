@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package org.brackit.berkeleydb;
+package org.brackit.berkeleydb.environment;
 
 import org.brackit.berkeleydb.tuple.Column;
 

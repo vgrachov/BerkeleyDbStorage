@@ -19,10 +19,10 @@ import java.util.Arrays;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.Catalog;
 import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.catalog.Catalog;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Atomic;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDate;

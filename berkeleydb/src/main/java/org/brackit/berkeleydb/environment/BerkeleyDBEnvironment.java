@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package org.brackit.berkeleydb.impl;
+package org.brackit.berkeleydb.environment;
 
 import java.io.File;
 import java.util.HashMap;
@@ -21,15 +21,12 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.Catalog;
-import org.brackit.berkeleydb.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.IndexValueCreator;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.berkeleydb.comparator.TupleComparator;
+import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.tuple.Column;
 
-import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseException;
@@ -57,7 +54,6 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 
     private Environment env;
     private Database catalog;
-    private DatabaseConfig catalogDBConfig;
     private Map<String,Database> databaseMap;
     private Map<Column,SecondaryDatabase> indexMap;
 	
@@ -72,6 +68,9 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
         DatabaseConfig catalogDBConfig = new DatabaseConfig();
         catalogDBConfig.setTransactional(true);
         catalogDBConfig.setAllowCreate(true);
+        catalogDBConfig.setSortedDuplicates(false);
+        
+        
         
         env = new Environment(new File("c:/db"), envConfig);
         

@@ -15,10 +15,10 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
-import org.brackit.berkeleydb.Catalog;
 import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.catalog.Catalog;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Column;
 import org.brackit.berkeleydb.tuple.Tuple;
 

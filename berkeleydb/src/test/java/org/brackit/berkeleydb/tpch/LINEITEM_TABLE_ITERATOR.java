@@ -1,14 +1,14 @@
 package org.brackit.berkeleydb.tpch;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.Catalog;
 import org.brackit.berkeleydb.Schema;
+import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.cursor.FullIndexIterator;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.cursor.RangeIndexSearchCursor;
 import org.brackit.berkeleydb.cursor.TupleCursor;
 import org.brackit.berkeleydb.cursor.TupleCursor.CursorType;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.Tuple;
 import org.junit.AfterClass;

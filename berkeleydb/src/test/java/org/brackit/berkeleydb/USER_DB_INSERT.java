@@ -17,7 +17,7 @@ package org.brackit.berkeleydb;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Atomic;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;

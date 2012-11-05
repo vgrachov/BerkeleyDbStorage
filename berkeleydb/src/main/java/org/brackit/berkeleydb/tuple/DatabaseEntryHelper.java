@@ -26,7 +26,7 @@ public final class DatabaseEntryHelper {
 		private static DatabaseEntryHelper instance = new DatabaseEntryHelper(); 
 	}
 	
-	public DatabaseEntryHelper(){
+	private DatabaseEntryHelper(){
 		
 	}
 	
@@ -47,6 +47,5 @@ public final class DatabaseEntryHelper {
 		DatabaseEntry databaseEntry = new DatabaseEntry(output.toByteArray());
 		return databaseEntry;
 	}
-
 	
 }

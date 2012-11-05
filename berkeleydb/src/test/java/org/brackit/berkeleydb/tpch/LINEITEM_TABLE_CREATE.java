@@ -6,12 +6,15 @@ import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import junit.framework.Assert;
+
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.Catalog;
 import org.brackit.berkeleydb.DatabaseAccess;
 import org.brackit.berkeleydb.IDatabaseAccess;
 import org.brackit.berkeleydb.Schema;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.catalog.Catalog;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.berkeleydb.tuple.Atomic;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDate;
@@ -50,7 +53,12 @@ public class LINEITEM_TABLE_CREATE {
 				new Column("LINEITEM", "L_COMMENT", ColumnType.String, false, false),
 		};
 		Schema schema = new Schema(columns, "LINEITEM");
-		Catalog.getInstance().createDatabase(schema);
+		try{
+			Catalog.getInstance().createDatabase(schema);
+		} catch (KeyDuplicationException e) {
+			logger.error(e.getMessage());
+			Assert.fail(e.getMessage());
+		}
 		logger.debug("Table create is finish");
 	}
 	

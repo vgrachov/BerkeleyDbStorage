@@ -52,7 +52,7 @@ public class TupleCursor extends DatabaseAccess implements ITupleCursor {
 	}
 	
 	public void open() {
-		logger.debug("Open cursor for database "+super.databaseName);
+		logger.debug("Open cursor for database "+super.dataBase.getDatabaseName());
 		cursor = dataBase.openCursor(null,null);
 	}
 

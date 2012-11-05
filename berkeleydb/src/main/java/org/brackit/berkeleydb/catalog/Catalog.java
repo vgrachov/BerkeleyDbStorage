@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package org.brackit.berkeleydb;
+package org.brackit.berkeleydb.catalog;
 
 import org.apache.log4j.Logger;
+import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.CatalogTupleBinding;
 import org.brackit.berkeleydb.binding.IndexValueCreator;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.berkeleydb.tuple.Column;
 import org.brackit.berkeleydb.tuple.ColumnType;
 
@@ -27,18 +29,22 @@ import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
+import com.sleepycat.je.OperationFailureException;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
+import com.sleepycat.je.Transaction;
 
 /**
- * Class for managing database catalog.
+ * Class for managing database catalog. Add new table and delete.
  * @author Volodymyr Grachov
  *
  */
-public final class Catalog {
+public final class Catalog implements ICatalog {
 
 	private Database catalogDB = BerkeleyDBEnvironment.getInstance().getCatalog();
 	private Environment environment = BerkeleyDBEnvironment.getInstance().getEnv();
@@ -47,25 +53,29 @@ public final class Catalog {
 	private static final Logger logger = Logger.getLogger(Catalog.class);
 	
 	private static class CatalogDBHolder{
-		private static Catalog instance = new Catalog(); 
+		private static ICatalog instance = new Catalog(); 
 	}
 	
-	public static Catalog getInstance(){
+	private Catalog(){
+		
+	}
+	
+	public static ICatalog getInstance(){
 		return CatalogDBHolder.instance;
 	}
 
-	private boolean addDatabaseToCatalog(Schema schema){
-		//TODO: add check whether db is created
+	private boolean addDatabaseToCatalog(Schema schema, Transaction transaction) throws KeyDuplicationException{
 		DatabaseEntry keyEntry = new DatabaseEntry(schema.getDatabaseName().getBytes());
 		DatabaseEntry valueEntry = new DatabaseEntry();
-		
 		CatalogTupleBinding catalogTupleBinding = new CatalogTupleBinding();
 		catalogTupleBinding.objectToEntry(schema, valueEntry);
-		catalogDB.put(null,keyEntry,valueEntry);
+		OperationStatus operationStatus = catalogDB.putNoOverwrite(transaction,keyEntry,valueEntry);
+		if (operationStatus==OperationStatus.KEYEXIST)
+			throw new KeyDuplicationException("Database with name "+schema.getDatabaseName()+" is already exists");
 		return true;
 	}
 	
-	private boolean createPrimaryDatabase(Schema schema){
+	private boolean createPrimaryDatabase(Schema schema, Transaction transaction){
 		DatabaseConfig databaseConfig = new DatabaseConfig();
 		databaseConfig.setTransactional(true);
 		databaseConfig.setAllowCreate(true);
@@ -75,7 +85,7 @@ public final class Catalog {
 	}
 
 	
-	private boolean createIndexes(Schema schema){
+	private boolean createIndexes(Schema schema, Transaction transaction){
 		DatabaseConfig databaseConfig = new DatabaseConfig();
 		databaseConfig.setTransactional(true);
 		databaseConfig.setAllowCreate(true);
@@ -95,20 +105,36 @@ public final class Catalog {
 		primaryDatabase.close();
 		return true;
 	}
-	/**
-	 * Create Primary database with all indexes, represented in secondary databases
-	 * @param schema - database schema
+	
+	/* (non-Javadoc)
+	 * @see org.brackit.berkeleydb.ICatalog#createDatabase(org.brackit.berkeleydb.Schema)
 	 */
-	public void createDatabase(Schema schema){
-		logger.debug("Add schema");
-		addDatabaseToCatalog(schema);
-		logger.debug("Create main database"+schema.getDatabaseName());
-		createPrimaryDatabase(schema);
-		logger.debug("Create indexes");
-		createIndexes(schema);
+	public void createDatabase(Schema schema) throws KeyDuplicationException{
+		Transaction transaction = environment.beginTransaction(null, null);
+		try{
+			logger.debug("Add schema");
+			addDatabaseToCatalog(schema,transaction);
+			logger.debug("Create main database"+schema.getDatabaseName());
+			createPrimaryDatabase(schema,transaction);
+			logger.debug("Create indexes");
+			createIndexes(schema,transaction);
+			transaction.commit();
+		}catch (DatabaseException e) {
+			if (transaction!=null)
+				transaction.abort();
+		}catch (KeyDuplicationException e) {
+			if (transaction!=null)
+				transaction.abort();
+			throw e;
+		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.brackit.berkeleydb.ICatalog#getSchemaByDatabaseName(java.lang.String)
+	 */
 	public Schema getSchemaByDatabaseName(String databaseName){
+		if (databaseName==null || databaseName.isEmpty())
+			throw new IllegalArgumentException("Database name can't be empty");
 		logger.debug("Search for database "+databaseName);
 		DatabaseEntry key = new DatabaseEntry(databaseName.getBytes());
 		DatabaseEntry schemaEntry = new DatabaseEntry();
@@ -123,33 +149,34 @@ public final class Catalog {
 			return null;
 	}
 	
-	public static void main(String[] args) {
-		Catalog catalogDB = new Catalog();
-		Schema schema = new Schema(new Column[]{
-				new Column("CUSTOMER","C_CUSTKEY", ColumnType.Integer,true,true),
-				new Column("CUSTOMER","C_NAME", ColumnType.String,false,true),
-				new Column("CUSTOMER","C_ADDRESS", ColumnType.String,false,false),
-				new Column("CUSTOMER","C_NATIONKEY", ColumnType.Integer,false,true),
-				new Column("CUSTOMER","C_PHONE", ColumnType.String,false,false),
-				new Column("CUSTOMER","C_ACCTBAL", ColumnType.Double,false,false),
-				new Column("CUSTOMER","C_MKTSEGMENT", ColumnType.String,false,false),
-				new Column("CUSTOMER","C_COMMENT", ColumnType.String,false,false)
-		}, "CUSTOMER");
-		catalogDB.createDatabase(schema);
-		Schema schema2 = catalogDB.getSchemaByDatabaseName("CUSTOMER");
-		for (int i=0;i<schema2.getColumns().length;i++){
-			logger.debug("Print column "+schema2.getColumns()[i]);
-		}
-		BerkeleyDBEnvironment.getInstance().close();
-		
+	private void deleteDatabaseFromCatalog(String databaseName, Transaction transaction)throws DatabaseNotFoundException{
+		DatabaseEntry keyEntry = new DatabaseEntry(databaseName.getBytes());
+		OperationStatus operationStatus = catalogDB.delete(transaction,keyEntry);
+		if (operationStatus == OperationStatus.NOTFOUND)
+			throw new DatabaseNotFoundException("Database "+databaseName+" is not found");
 	}
-/*	CREATE TEXT TABLE CUSTOMER ( C_CUSTKEY     INTEGER NOT NULL,
-            C_NAME        VARCHAR(25) NOT NULL,
-            C_ADDRESS     VARCHAR(40) NOT NULL,
-            C_NATIONKEY   INTEGER NOT NULL,
-            C_PHONE       CHAR(15) NOT NULL,
-            C_ACCTBAL     DECIMAL(15,2)   NOT NULL,
-            C_MKTSEGMENT  CHAR(10) NOT NULL,
-            C_COMMENT     VARCHAR(117) NOT NULL);
-*/
+
+	private void deletePrimaryDatabase(String databaseName, Transaction transaction) throws DatabaseNotFoundException{
+		DatabaseEntry keyEntry = new DatabaseEntry(databaseName.getBytes());
+		environment.removeDatabase(transaction, databaseName);
+	}
+	
+	
+	/* (non-Javadoc)
+	 * @see org.brackit.berkeleydb.ICatalog#deleteDatabase(java.lang.String)
+	 */
+	public boolean deleteDatabase(String databaseName){
+		Transaction transaction = environment.beginTransaction(null, null);
+		try{
+			deleteDatabaseFromCatalog(databaseName,transaction);
+			deletePrimaryDatabase(databaseName,transaction);
+			transaction.commit();
+			return true;
+		}catch (DatabaseException e) {
+			if (transaction!=null)
+				transaction.abort();
+			return false;
+		}
+	}
+	
 }

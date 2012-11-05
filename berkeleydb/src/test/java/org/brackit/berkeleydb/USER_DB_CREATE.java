@@ -16,6 +16,9 @@
 package org.brackit.berkeleydb;
 
 import org.apache.log4j.Logger;
+import org.brackit.berkeleydb.catalog.Catalog;
+import org.brackit.berkeleydb.catalog.ICatalog;
+import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.berkeleydb.tuple.Column;
 import org.brackit.berkeleydb.tuple.ColumnType;
 import org.junit.Assert;
@@ -27,7 +30,7 @@ public class USER_DB_CREATE {
 	
 	@Test
 	public void createDatabase(){
-		Catalog catalog = Catalog.getInstance();
+		ICatalog catalog = Catalog.getInstance();
 		Schema schema = new Schema(new Column[]{
 				new Column("USER_TABLE", "ID", ColumnType.Integer, true, true),
 				new Column("USER_TABLE", "Login", ColumnType.String, false, true),
@@ -36,7 +39,13 @@ public class USER_DB_CREATE {
 				new Column("USER_TABLE", "Test", ColumnType.Integer, false, true),
 				new Column("USER_TABLE", "Birthday", ColumnType.String, false, false)
 		}, "USER_TABLE");
-		catalog.createDatabase(schema);
+		try{
+			catalog.createDatabase(schema);
+		} catch (KeyDuplicationException e) {
+			logger.error(e.getMessage());
+			Assert.fail(e.getMessage());
+		}
+		
 		Schema readSchema = catalog.getSchemaByDatabaseName("USER_TABLE");
 		for (int i=0;i<readSchema.getColumns().length;i++){
 			logger.debug(readSchema.getColumns()[i]);

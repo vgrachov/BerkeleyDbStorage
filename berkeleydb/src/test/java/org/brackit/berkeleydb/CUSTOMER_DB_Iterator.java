@@ -22,7 +22,7 @@ import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.cursor.TupleCursor;
 import org.brackit.berkeleydb.cursor.TupleCursor.CursorType;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Tuple;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

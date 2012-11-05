@@ -16,9 +16,10 @@
 package org.brackit.berkeleydb;
 
 import org.apache.log4j.Logger;
+import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.cursor.FullIndexIterator;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Tuple;
 import org.junit.AfterClass;
 import org.junit.Test;

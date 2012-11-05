@@ -15,7 +15,7 @@ public final class DatabaseBindingHelper {
 		private static DatabaseBindingHelper instance = new DatabaseBindingHelper(); 
 	}
 	
-	public DatabaseBindingHelper(){
+	private DatabaseBindingHelper(){
 		
 	}
 	

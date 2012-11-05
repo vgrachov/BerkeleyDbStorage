@@ -27,7 +27,8 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.impl.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.catalog.Catalog;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Atomic;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
