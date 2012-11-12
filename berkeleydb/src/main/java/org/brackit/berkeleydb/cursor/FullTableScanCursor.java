@@ -29,31 +29,23 @@ import com.sleepycat.je.DiskOrderedCursorConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 
-public class TupleCursor extends DatabaseAccess implements ITupleCursor {
+public class FullTableScanCursor extends DatabaseAccess implements ITupleCursor {
 
-	private static final Logger logger = Logger.getLogger(TupleCursor.class);
-	private static final DiskOrderedCursorConfig docc = new DiskOrderedCursorConfig();
+	private static final Logger logger = Logger.getLogger(FullTableScanCursor.class);
 	
-	private Cursor cursor;
-	private CursorType cursorType;
+	private DiskOrderedCursor cursor;
 	
 	private final RelationalTupleBinding tupleBinding;
 	
 	
-	public enum CursorType{
-		FullScan,
-		RangeScan
-	}
-	
-	public TupleCursor(String databaseName, CursorType cursorType){
+	public FullTableScanCursor(String databaseName){
 		super(databaseName);
-		this.cursorType = cursorType;
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());
 	}
 	
 	public void open() {
 		logger.debug("Open cursor for database "+super.dataBase.getDatabaseName());
-		cursor = dataBase.openCursor(null,null);
+		cursor = dataBase.openCursor(DiskOrderedCursorConfig.DEFAULT);
 	}
 
 	public Tuple next() {
@@ -61,7 +53,6 @@ public class TupleCursor extends DatabaseAccess implements ITupleCursor {
 		DatabaseEntry elementData = new DatabaseEntry();
 		OperationStatus status = cursor.getNext(elementKey, elementData, LockMode.READ_UNCOMMITTED);
 		if (status == OperationStatus.SUCCESS){
-			RelationalTupleBinding tupleBinding = new RelationalTupleBinding(schema.getColumns());
 			Tuple tuple = tupleBinding.smartEntryToObject(new TupleInput(elementKey.getData()), new TupleInput(elementData.getData()));
 			return tuple;
 		}

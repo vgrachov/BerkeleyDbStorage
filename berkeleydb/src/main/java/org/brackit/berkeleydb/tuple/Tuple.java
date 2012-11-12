@@ -29,6 +29,10 @@ public class Tuple implements Serializable {
 		this.fields = fields.clone();
 	}
 
+	public Tuple(){
+		
+	}
+	
 	public Tuple(Atomic[] fields) {
 		this.fields = fields.clone();
 	}

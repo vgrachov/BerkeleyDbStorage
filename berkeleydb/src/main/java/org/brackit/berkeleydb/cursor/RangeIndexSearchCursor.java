@@ -70,8 +70,11 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 		logger.debug("Right range "+rightKey);
 		this.rightKey = rightKey;
 		this.leftKey = leftKey;
-		currentSecondaryIndexKey = DatabaseEntryHelper.getInstance().createDatabaseEntry(leftKey);
 		this.column = column;
+		if (leftKey!=null)
+			currentSecondaryIndexKey = DatabaseEntryHelper.getInstance().createDatabaseEntry(leftKey);
+		else
+			currentSecondaryIndexKey = null;
 		binding = DatabaseBindingHelper.getInstance().databaseBinding(column.getType());
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());
@@ -85,6 +88,8 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 	}
 
 	private int compare(DatabaseEntry currentSecondaryIndexKey){
+		if (rightKey == null)
+			return 1;
 		int compare = 0;
 		if (column.getType() == ColumnType.String){
 			String currentSecondaryKey = (String)binding.entryToObject(currentSecondaryIndexKey);
@@ -111,7 +116,12 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 	
 	public Tuple next() {
 		if (retVal == OperationStatus.NOTFOUND){
-			retVal = cursor.getSearchKeyRange(currentSecondaryIndexKey, currentPrimaryKey, currentPrimaryValue, LockMode.DEFAULT);
+			if (currentSecondaryIndexKey!=null)
+				retVal = cursor.getSearchKeyRange(currentSecondaryIndexKey, currentPrimaryKey, currentPrimaryValue, LockMode.DEFAULT);
+			else{
+				currentSecondaryIndexKey = new DatabaseEntry();
+				retVal = cursor.getFirst(currentSecondaryIndexKey, currentPrimaryKey, currentPrimaryValue, LockMode.DEFAULT);
+			}
 			if (retVal==OperationStatus.SUCCESS){
 				int compare = compare(currentSecondaryIndexKey);
 				if (compare<0)

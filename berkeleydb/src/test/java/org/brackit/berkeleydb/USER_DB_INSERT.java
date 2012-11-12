@@ -31,7 +31,7 @@ public class USER_DB_INSERT {
 	@Test
 	public void fillDatabase(){
 		IDatabaseAccess databaseAccess = new DatabaseAccess("USER_TABLE");
-		for (int i=0;i<200;i++){
+		for (int i=0;i<5;i++){
 			Atomic[] fields = new Atomic[6];
 			fields[0] = new AtomicInteger("ID", i);
 			fields[1] = new AtomicString("Login", "user"+i);

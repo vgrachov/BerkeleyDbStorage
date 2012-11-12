@@ -20,8 +20,7 @@ import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
-import org.brackit.berkeleydb.cursor.TupleCursor;
-import org.brackit.berkeleydb.cursor.TupleCursor.CursorType;
+import org.brackit.berkeleydb.cursor.FullTableScanCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.Tuple;
 import org.junit.AfterClass;
@@ -36,7 +35,7 @@ public class CUSTOMER_DB_Iterator {
 	
 	@BeforeClass
 	public static void init(){
-		cursor = new TupleCursor("CUSTOMER",CursorType.FullScan);
+		cursor = new FullTableScanCursor("CUSTOMER");
 	}
 	
 	@Test

@@ -19,8 +19,7 @@ import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.cursor.EqualMatchIndexSearchCursor;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
-import org.brackit.berkeleydb.cursor.TupleCursor;
-import org.brackit.berkeleydb.cursor.TupleCursor.CursorType;
+import org.brackit.berkeleydb.cursor.FullTableScanCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -34,7 +33,7 @@ public class USER_DB_ITERATOR {
 
 	
 	public void iterator(){
-		ITupleCursor tupleCursor = new TupleCursor("USER_TABLE", CursorType.FullScan);
+		ITupleCursor tupleCursor = new FullTableScanCursor("USER_TABLE");
 		tupleCursor.open();
 		Tuple tuple = null;
 		while ((tuple = tupleCursor.next())!=null){

@@ -79,7 +79,7 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 		
 		foundKeyEntry = new DatabaseEntry();
 		foundDataEntry = new DatabaseEntry();
-		
+		//TODO: review move to next operation
 		retVal = cursor.getSearchKey(searchKeyEntry, foundKeyEntry, foundDataEntry, LockMode.DEFAULT);
 	}
 

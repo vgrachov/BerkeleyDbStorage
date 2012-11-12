@@ -46,7 +46,7 @@ public final class IndexValueCreator implements SecondaryKeyCreator {
 	
 	public boolean createSecondaryKey(SecondaryDatabase secondary,
 			DatabaseEntry key, DatabaseEntry data, DatabaseEntry result) {
-		logger.debug("Create index for "+index.getColumnName());
+		//logger.debug("Create index for "+index.getColumnName());
 		TupleInput keyInput = new TupleInput(key.getData());
 		TupleInput dataInput = new TupleInput(data.getData());
 		Tuple tuple = tupleBinding.smartEntryToObject(keyInput, dataInput);
@@ -54,7 +54,7 @@ public final class IndexValueCreator implements SecondaryKeyCreator {
 		Atomic[] fields = tuple.getFields();
 		for (int i=0;i<fields.length;i++){
 			if (fields[i].getFieldName().equals(index.getColumnName())){
-				logger.debug("Column matching is find");
+				//logger.debug("Column matching is find");
 				if (index.getType() == ColumnType.String)
 					resultSerialized.writeString(((AtomicString)fields[i]).getData());
 				else
