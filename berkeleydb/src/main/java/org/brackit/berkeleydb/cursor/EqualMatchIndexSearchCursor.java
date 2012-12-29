@@ -47,6 +47,7 @@ import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.LockMode;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
+import com.sleepycat.db.Transaction;
 
 public class EqualMatchIndexSearchCursor implements ITupleCursor {
 
@@ -66,18 +67,24 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 	
 	private String databaseName;
 	private OperationStatus retVal;
-	
+	private final Transaction transaction;
+
 	public EqualMatchIndexSearchCursor(String databaseName, Column column, Atomic value){
+		this(databaseName,column,value,null);
+	}
+	
+	public EqualMatchIndexSearchCursor(String databaseName, Column column, Atomic value, Transaction transaction){
 		this.databaseName = databaseName;
 		this.column = column;
 		this.searchValue = value;
+		this.transaction = transaction;
 	}
 	
 	public void open() {
 		logger.debug("Open cursor over database "+databaseName+" for column "+column.getColumnName());
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(databaseName);
 		try {
-			cursor=BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(null, null);
+			cursor=BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, null);
 		} catch (DatabaseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

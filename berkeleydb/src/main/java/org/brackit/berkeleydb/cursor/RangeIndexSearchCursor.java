@@ -52,12 +52,14 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.db.Cursor;
+import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.LockMode;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
 import com.sleepycat.db.SecondaryDatabase;
+import com.sleepycat.db.Transaction;
 
 public class RangeIndexSearchCursor implements ITupleCursor {
 
@@ -76,8 +78,13 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 	private final Atomic rightKey;
 	private final Atomic leftKey;
 	private final EntryBinding binding;
+	private final Transaction transaction;
 	
 	public RangeIndexSearchCursor(Column column, Atomic leftKey, Atomic rightKey){
+		this(column,leftKey,rightKey,null);
+	}
+	
+	public RangeIndexSearchCursor(Column column, Atomic leftKey, Atomic rightKey, Transaction transaction){
 		logger.debug("Create range search cursor for table "+column.getDatabaseName()+" and column"+column.getColumnName());
 		logger.debug("Left range "+leftKey);
 		logger.debug("Right range "+rightKey);
@@ -91,12 +98,13 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 		binding = DatabaseBindingHelper.getInstance().databaseBinding(column.getType());
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());
+		this.transaction = transaction;
 	}
 	
 	public void open() {
 		SecondaryDatabase database = BerkeleyDBEnvironment.getInstance().getIndexreference(column);
 		try {
-			cursor = database.openSecondaryCursor(null, null);
+			cursor = database.openSecondaryCursor(transaction, CursorConfig.DEFAULT);
 		} catch (DatabaseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

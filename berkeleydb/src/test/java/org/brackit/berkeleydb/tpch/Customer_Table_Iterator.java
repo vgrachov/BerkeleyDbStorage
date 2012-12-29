@@ -43,15 +43,22 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.sleepycat.db.DatabaseException;
+import com.sleepycat.db.Environment;
+import com.sleepycat.db.Transaction;
+import com.sleepycat.db.TransactionConfig;
+
 public class Customer_Table_Iterator {
 
 	private static final Logger logger = Logger.getLogger(Customer_Table_Iterator.class);
 	private static String tableName = "customer";
 	private static ICatalog catalog;
+	private static Environment environment;
 
 	@BeforeClass
 	public static void init(){
 		catalog = Catalog.getInstance();
+		environment = BerkeleyDBEnvironment.getInstance().getEnv();
 	}
 	
 	@Test
@@ -75,7 +82,14 @@ public class Customer_Table_Iterator {
 		Column column = catalog.getSchemaByDatabaseName(tableName).getColumns()[6];
 		long start = System.currentTimeMillis();
 		AtomicString value = new AtomicString("c_mktsegment", "BUILDING");
-		ITupleCursor cursor = new EqualMatchIndexSearchCursor(tableName, column, value);
+		Transaction transaction = null;
+		try {
+			transaction = environment.beginTransaction(null, TransactionConfig.DEFAULT);
+		} catch (DatabaseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		ITupleCursor cursor = new EqualMatchIndexSearchCursor(tableName, column, value,transaction);
 		cursor.open();
 		Tuple tuple = null;
 		int counter = 0;
@@ -86,6 +100,17 @@ public class Customer_Table_Iterator {
 		cursor.close();
 		logger.info("Equal match found : "+counter);
 		logger.info("Equal match search : "+(System.currentTimeMillis()-start));
+		try{
+			transaction.commit();
+		}catch (Exception e) {
+			try {
+				transaction.abort();
+			} catch (DatabaseException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
 	}
 	
 

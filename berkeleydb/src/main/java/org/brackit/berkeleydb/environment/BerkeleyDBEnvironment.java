@@ -110,6 +110,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
         // Set it large enough so that it won't page.
         myEnvConfig.setCacheSize(10 * 1024 * 1024);
         myEnvConfig.setLogAutoRemove(true);
+
         
 
 
@@ -123,6 +124,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
         
         try{
         	env = new Environment(new File("c:/db10mb/"), myEnvConfig);
+        	
         	catalog = env.openDatabase(null,CATALOG, null, catalogDBConfig);
         } catch (DatabaseException e) {
 			logger.error(e.getMessage());
@@ -147,7 +149,12 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 			DatabaseConfig databaseConfig = new DatabaseConfig();
 			databaseConfig.setTransactional(true);
 			databaseConfig.setAllowCreate(false);
-			databaseConfig.setType(DatabaseType.BTREE);
+			if (databaseName.equals("orders"))
+				databaseConfig.setType(DatabaseType.BTREE);
+			else
+				databaseConfig.setType(DatabaseType.BTREE);
+			databaseConfig.setCacheSize(100000000);
+			
 			
 			Database db = null;
 			try {
@@ -170,6 +177,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 					String indexDatabaseName = null;
 					indexDatabaseName = databaseName+"_"+schema.getColumns()[i].getColumnName()+"_index";
 					secondaryConfig.setKeyCreator(indexValueCreator);
+					secondaryConfig.setCacheSize(100000000);
 					
 					SecondaryDatabase secondaryDatabase = null;
 					try {

@@ -69,7 +69,7 @@ public class Lineitem_Table_Create {
 	public void createTable(){
 		logger.debug("Create lineitem table");
 		Column[] columns = new Column[]{
-				new Column("lineitem", "l_orderkey", ColumnType.Integer, true, false),
+				new Column("lineitem", "l_orderkey", ColumnType.Integer, true, true),
 				new Column("lineitem", "l_partkey", ColumnType.Integer, false, true),
 				new Column("lineitem", "l_suppkey", ColumnType.Integer, false, true),
 				new Column("lineitem", "l_linenumber", ColumnType.Integer, true, true),
@@ -120,6 +120,7 @@ public class Lineitem_Table_Create {
 				i++;
 				String[] entries = line.split("\\|");
 				Atomic[] fields = new Atomic[16];
+				//Atomic[] fields = new Atomic[4];
 				fields[0] = new AtomicInteger("l_orderkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicInteger("l_partkey", Integer.valueOf(entries[1]));
 				fields[2] = new AtomicInteger("l_suppkey", Integer.valueOf(entries[2]));
@@ -139,6 +140,7 @@ public class Lineitem_Table_Create {
 				}*/
 
 				fields[10] = new AtomicString("l_shipdate", entries[10]);
+				
 				fields[11] = new AtomicString("l_commitdate", entries[11]);
 				fields[12] = new AtomicString("l_receiptdate", entries[12]);
 

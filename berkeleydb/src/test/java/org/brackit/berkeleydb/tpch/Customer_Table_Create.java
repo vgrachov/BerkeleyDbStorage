@@ -43,6 +43,7 @@ import org.brackit.berkeleydb.catalog.ICatalog;
 import org.brackit.berkeleydb.cursor.FullTableScanCursor;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.berkeleydb.tuple.Atomic;
 import org.brackit.berkeleydb.tuple.AtomicChar;
@@ -56,16 +57,23 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.sleepycat.db.DatabaseException;
+import com.sleepycat.db.Environment;
+import com.sleepycat.db.Transaction;
+import com.sleepycat.db.TransactionConfig;
+
 public class Customer_Table_Create {
 	
 	private static final Logger logger = Logger.getLogger(Customer_Table_Create.class);
 	private static final String tableName = "customer";
 	
 	private static ICatalog catalog;
+	private static Environment environment;
 	
 	@BeforeClass
 	public static void init(){
 		catalog = Catalog.getInstance();
+		environment = BerkeleyDBEnvironment.getInstance().getEnv();
 	}
 	
 	@Test
@@ -143,7 +151,14 @@ public class Customer_Table_Create {
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
-		ITupleCursor cursor = new FullTableScanCursor(tableName);
+		Transaction transaction = null;
+		try {
+			transaction = environment.beginTransaction(null, TransactionConfig.DEFAULT);
+		} catch (DatabaseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		ITupleCursor cursor = new FullTableScanCursor(tableName,transaction);
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;
@@ -153,6 +168,16 @@ public class Customer_Table_Create {
 		}
 		cursor.close();
 		logger.debug("Rows : "+counter);
+		try {
+			transaction.commit();
+		} catch (DatabaseException e) {
+			try {
+				transaction.abort();
+			} catch (DatabaseException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
 		//Assert.assertEquals(counter, 1500);
 	}
 

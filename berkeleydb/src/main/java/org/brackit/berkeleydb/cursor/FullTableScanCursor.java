@@ -35,10 +35,12 @@ import org.brackit.berkeleydb.tuple.Tuple;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.db.Cursor;
+import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.LockMode;
 import com.sleepycat.db.OperationStatus;
+import com.sleepycat.db.Transaction;
 
 public class FullTableScanCursor extends DatabaseAccess implements ITupleCursor {
 
@@ -50,16 +52,23 @@ public class FullTableScanCursor extends DatabaseAccess implements ITupleCursor 
 	
 	private final String databaseName;
 	
+	private final Transaction transaction;
+	
 	public FullTableScanCursor(String databaseName){
+		this(databaseName,null);
+	}
+	
+	public FullTableScanCursor(String databaseName, Transaction transaction){
 		super(databaseName);
 		this.databaseName = databaseName;
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());
+		this.transaction = transaction;
 	}
 	
 	public void open() {
 		try {
 			logger.debug("Open cursor for database "+databaseName);
-			cursor = dataBase.openCursor(null, null);
+			cursor = dataBase.openCursor(transaction, CursorConfig.DEFAULT);
 		} catch (DatabaseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

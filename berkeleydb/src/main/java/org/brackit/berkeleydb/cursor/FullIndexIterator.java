@@ -40,6 +40,7 @@ import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.LockMode;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
+import com.sleepycat.db.Transaction;
 
 public class FullIndexIterator implements ITupleCursor {
 
@@ -50,15 +51,21 @@ public class FullIndexIterator implements ITupleCursor {
 	private DatabaseEntry primaryValue = new DatabaseEntry();
 	private RelationalTupleBinding tupleBinding;
 	private OperationStatus retVal = OperationStatus.NOTFOUND;
+	private final Transaction transaction;
 	
 	public FullIndexIterator(Column column){
+		this(column,null);
+	}
+	
+	public FullIndexIterator(Column column, Transaction transaction){
 		this.column = column;
+		this.transaction = transaction;
 	}
 	
 	public void open() {
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		try {
-			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(null, null);
+			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, null);
 		} catch (DatabaseException e) {
 			e.printStackTrace();
 		}
