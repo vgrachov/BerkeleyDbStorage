@@ -27,7 +27,7 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.tuple;
 
-public class AtomicDouble extends Atomic<Double> implements Comparable<AtomicDouble> {
+public class AtomicDouble extends AtomicValue<Double> implements Comparable<AtomicDouble> {
 
 	private Double data;
 	

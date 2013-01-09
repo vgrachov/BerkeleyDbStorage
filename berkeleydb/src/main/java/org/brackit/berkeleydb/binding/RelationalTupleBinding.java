@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDate;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
@@ -60,7 +60,7 @@ public class RelationalTupleBinding extends TupleBinding<Tuple> {
 	}
 
 	public Tuple smartEntryToObject(TupleInput key, TupleInput input){
-		Atomic[] fields = new Atomic[schema.length];
+		AtomicValue[] fields = new AtomicValue[schema.length];
 		for (int i=0;i<schema.length;i++){
 			
 			TupleInput target = null;
@@ -104,7 +104,7 @@ public class RelationalTupleBinding extends TupleBinding<Tuple> {
 	}
 
 	public void smartObjectToEntry(Tuple tuple, TupleOutput key, TupleOutput output){
-		Atomic[] fields = tuple.getFields();
+		AtomicValue[] fields = tuple.getFields();
 		for (int i=0;i<schema.length;i++){
 			TupleOutput target = null;
 			if (schema[i].isBelongToKey())

@@ -35,7 +35,7 @@ import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDate;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
@@ -75,16 +75,16 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 	private OperationStatus retVal = OperationStatus.NOTFOUND;
 	
 	private final RelationalTupleBinding tupleBinding;
-	private final Atomic rightKey;
-	private final Atomic leftKey;
+	private final AtomicValue rightKey;
+	private final AtomicValue leftKey;
 	private final EntryBinding binding;
 	private final Transaction transaction;
 	
-	public RangeIndexSearchCursor(Column column, Atomic leftKey, Atomic rightKey){
+	public RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey){
 		this(column,leftKey,rightKey,null);
 	}
 	
-	public RangeIndexSearchCursor(Column column, Atomic leftKey, Atomic rightKey, Transaction transaction){
+	public RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, Transaction transaction){
 		logger.debug("Create range search cursor for table "+column.getDatabaseName()+" and column"+column.getColumnName());
 		logger.debug("Left range "+leftKey);
 		logger.debug("Right range "+rightKey);

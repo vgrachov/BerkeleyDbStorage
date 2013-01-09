@@ -29,7 +29,7 @@ package org.brackit.berkeleydb.tuple;
 
 import java.util.Date;
 
-public class AtomicDate extends Atomic<Date> implements Comparable<AtomicDate> {
+public class AtomicDate extends AtomicValue<Date> implements Comparable<AtomicDate> {
 
 	private Date data;
 

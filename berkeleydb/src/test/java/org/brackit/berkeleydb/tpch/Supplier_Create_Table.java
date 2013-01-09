@@ -45,7 +45,7 @@ import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -119,7 +119,7 @@ public class Supplier_Create_Table {
 			int i=0;
 			while ((line=lineItemInput.readLine())!=null){
 				String[] entries = line.split("\\|");
-				Atomic[] fields = new Atomic[7];
+				AtomicValue[] fields = new AtomicValue[7];
 				fields[0] = new AtomicInteger("s_suppkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicString("s_name", entries[1]);
 				fields[2] = new AtomicString("s_address", entries[2]);

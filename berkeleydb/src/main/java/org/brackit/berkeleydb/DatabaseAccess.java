@@ -49,7 +49,7 @@ public class DatabaseAccess implements IDatabaseAccess {
 	protected final Database dataBase;
 	protected final Schema schema;
 	protected final Environment environment;
-	protected RelationalTupleBinding tupleBinding;
+	protected final RelationalTupleBinding tupleBinding;
 	
 	public DatabaseAccess(String databaseName){
 		this.dataBase = BerkeleyDBEnvironment.getInstance().getDatabasereference(databaseName);
@@ -70,8 +70,7 @@ public class DatabaseAccess implements IDatabaseAccess {
 				try {
 					transaction.abort();
 				} catch (DatabaseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					logger.error(e1.getMessage());
 				}
 			return false;
 		}
@@ -87,8 +86,7 @@ public class DatabaseAccess implements IDatabaseAccess {
 			if (status != OperationStatus.SUCCESS)
 				logger.debug(status);
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 		return true;
 	}
@@ -99,5 +97,40 @@ public class DatabaseAccess implements IDatabaseAccess {
 		// TODO Auto-generated method stub
 		return false;
 	}
+
+	public boolean delete(Tuple tuple){
+		Transaction transaction = null;
+		try{
+			transaction = environment.beginTransaction(null, TransactionConfig.DEFAULT);
+			boolean delete = delete(tuple,transaction);
+			transaction.commit();
+			return delete;
+		}catch (DatabaseException e) {
+			if (transaction!=null)
+				try {
+					transaction.abort();
+				} catch (DatabaseException e1) {
+					logger.error(e1.getMessage());
+				}
+			return false;
+		}
+	}
+	
+	public boolean delete(Tuple tuple, Transaction transaction){
+		TupleOutput serializedTupleValue = new TupleOutput();
+		TupleOutput serializedKey = new TupleOutput();
+		tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValue);
+		try {
+			OperationStatus status = dataBase.delete(transaction, new DatabaseEntry(serializedKey.toByteArray()));
+			if (status == OperationStatus.SUCCESS)
+				return true;
+			else
+				return false;
+		} catch (DatabaseException e) {
+			logger.error(e.getMessage());
+		}
+		return false;
+	}
+
 	
 }

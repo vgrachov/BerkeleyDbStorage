@@ -33,7 +33,7 @@ import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -55,7 +55,7 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 
 	private SecondaryCursor cursor;
 	
-	private final Atomic searchValue;
+	private final AtomicValue searchValue;
 	
 	private final Column column;
 	
@@ -69,11 +69,11 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 	private OperationStatus retVal;
 	private final Transaction transaction;
 
-	public EqualMatchIndexSearchCursor(String databaseName, Column column, Atomic value){
+	public EqualMatchIndexSearchCursor(String databaseName, Column column, AtomicValue value){
 		this(databaseName,column,value,null);
 	}
 	
-	public EqualMatchIndexSearchCursor(String databaseName, Column column, Atomic value, Transaction transaction){
+	public EqualMatchIndexSearchCursor(String databaseName, Column column, AtomicValue value, Transaction transaction){
 		this.databaseName = databaseName;
 		this.column = column;
 		this.searchValue = value;

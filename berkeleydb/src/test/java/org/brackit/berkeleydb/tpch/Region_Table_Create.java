@@ -45,7 +45,7 @@ import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -110,7 +110,7 @@ public class Region_Table_Create {
 			int i=0;
 			while ((line=lineItemInput.readLine())!=null){
 				String[] entries = line.split("\\|");
-				Atomic[] fields = new Atomic[3];
+				AtomicValue[] fields = new AtomicValue[3];
 				fields[0] = new AtomicInteger("r_regionkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicString("r_name", entries[1]);
 				fields[2] = new AtomicString("r_comment", entries[2]);

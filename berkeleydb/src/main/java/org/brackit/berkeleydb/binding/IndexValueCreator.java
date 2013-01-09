@@ -28,7 +28,7 @@
 package org.brackit.berkeleydb.binding;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDate;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
@@ -63,7 +63,7 @@ public final class IndexValueCreator implements SecondaryKeyCreator {
 		TupleInput dataInput = new TupleInput(data.getData());
 		Tuple tuple = tupleBinding.smartEntryToObject(keyInput, dataInput);
 		TupleOutput resultSerialized = new TupleOutput();
-		Atomic[] fields = tuple.getFields();
+		AtomicValue[] fields = tuple.getFields();
 		for (int i=0;i<fields.length;i++){
 			if (fields[i].getFieldName().equals(index.getColumnName())){
 				//logger.debug("Column matching is find");

@@ -27,14 +27,20 @@
  ******************************************************************************/
 package org.brackit.berkeleydb;
 
-import org.brackit.berkeleydb.tuple.Column;
 import org.brackit.berkeleydb.tuple.Tuple;
 
 import com.sleepycat.db.DatabaseEntry;
+import com.sleepycat.db.Transaction;
 
 public interface IDatabaseAccess {
 
 	boolean insert(Tuple tuple);
 	
+	boolean insert(Tuple tuple, Transaction transaction);
+	
 	boolean update(DatabaseEntry key, DatabaseEntry value);
+	
+	boolean delete(Tuple tuple);
+	
+	boolean delete(Tuple tuple, Transaction transaction);
 }

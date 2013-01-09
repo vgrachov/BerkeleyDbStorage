@@ -44,7 +44,7 @@ import org.brackit.berkeleydb.cursor.FullTableScanCursor;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
 import org.brackit.berkeleydb.tuple.AtomicString;
@@ -66,7 +66,6 @@ public class Nation_Table_Create {
 		catalog = Catalog.getInstance();
 	}
 	
-	@Test
 	public void createTable(){
 		catalog = Catalog.getInstance();
 		Schema schema = new Schema(new Column[]{
@@ -95,8 +94,7 @@ public class Nation_Table_Create {
 	@Test
 	public void fillTable(){
 		IDatabaseAccess databaseAccess = new DatabaseAccess(tableName);
-		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
-		BufferedReader lineItemInput = null;
+		/*BufferedReader lineItemInput = null;
 		try {
 			lineItemInput = new BufferedReader( new FileReader("E:\\tpch\\10mb\\nation.tbl"));
 		} catch (FileNotFoundException e) {
@@ -107,7 +105,7 @@ public class Nation_Table_Create {
 			int i=0;
 			while ((line=lineItemInput.readLine())!=null){
 				String[] entries = line.split("\\|");
-				Atomic[] fields = new Atomic[4];
+				AtomicValue[] fields = new AtomicValue[4];
 				fields[0] = new AtomicInteger("n_nationkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicString("n_name", entries[1]);
 				fields[2] = new AtomicInteger("n_regionkey", Integer.valueOf(entries[2]));
@@ -117,7 +115,7 @@ public class Nation_Table_Create {
 			}
 		} catch (IOException e) {
 			logger.error(e.getMessage());
-		}
+		}*/
 		ITupleCursor cursor = new FullTableScanCursor(tableName);
 		cursor.open();
 		int counter = 0;

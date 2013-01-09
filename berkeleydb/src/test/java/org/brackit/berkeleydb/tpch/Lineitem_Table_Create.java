@@ -47,7 +47,7 @@ import org.brackit.berkeleydb.cursor.FullTableScanCursor;
 import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDate;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
@@ -119,7 +119,7 @@ public class Lineitem_Table_Create {
 					logger.debug(i);
 				i++;
 				String[] entries = line.split("\\|");
-				Atomic[] fields = new Atomic[16];
+				AtomicValue[] fields = new AtomicValue[16];
 				//Atomic[] fields = new Atomic[4];
 				fields[0] = new AtomicInteger("l_orderkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicInteger("l_partkey", Integer.valueOf(entries[1]));

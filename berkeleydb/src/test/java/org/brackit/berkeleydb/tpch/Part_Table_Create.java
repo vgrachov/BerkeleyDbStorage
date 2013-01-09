@@ -45,7 +45,7 @@ import org.brackit.berkeleydb.cursor.ITupleCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.berkeleydb.tuple.Atomic;
+import org.brackit.berkeleydb.tuple.AtomicValue;
 import org.brackit.berkeleydb.tuple.AtomicChar;
 import org.brackit.berkeleydb.tuple.AtomicDouble;
 import org.brackit.berkeleydb.tuple.AtomicInteger;
@@ -117,7 +117,7 @@ public class Part_Table_Create {
 			int i=0;
 			while ((line=lineItemInput.readLine())!=null){
 				String[] entries = line.split("\\|");
-				Atomic[] fields = new Atomic[9];
+				AtomicValue[] fields = new AtomicValue[9];
 				fields[0] = new AtomicInteger("p_partkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicString("p_name", entries[1]);
 				fields[2] = new AtomicString("p_mfgr", entries[2]);

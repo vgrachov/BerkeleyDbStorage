@@ -68,7 +68,7 @@ public class Transactiontest {
         
 		MultipleDataEntry multipleKey = new MultipleDataEntry();
 		MultipleDataEntry multipleData = new MultipleDataEntry();
-		for (int i=0;i<1000000;i++){
+		for (int i=0;i<1000;i++){
 			if (i%10000==0)
 				System.out.println(i);
 			DatabaseEntry key = new DatabaseEntry(("key"+i).getBytes());
@@ -163,7 +163,7 @@ public class Transactiontest {
 		testDatabase.put(transaction, key, value);
 		//transaction.commit();
 		value = new DatabaseEntry();
-		OperationStatus status = testDatabase.get(transaction1, key, value,LockMode.READ_UNCOMMITTED);
+		OperationStatus status = testDatabase.get(transaction1, key, value,LockMode.DEFAULT);
 		System.out.println(status);
 		System.out.println(new String(value.getData()));
 		transaction1.commit();

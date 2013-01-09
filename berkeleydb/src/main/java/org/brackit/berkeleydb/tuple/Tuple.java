@@ -31,13 +31,13 @@ import java.io.Serializable;
 
 public class Tuple implements Serializable {
 
-	private Atomic[] fields;
+	private AtomicValue[] fields;
 
-	public Atomic[] getFields() {
+	public AtomicValue[] getFields() {
 		return fields;
 	}
 
-	public void setFields(Atomic[] fields) {
+	public void setFields(AtomicValue[] fields) {
 		this.fields = fields.clone();
 	}
 
@@ -45,7 +45,7 @@ public class Tuple implements Serializable {
 		
 	}
 	
-	public Tuple(Atomic[] fields) {
+	public Tuple(AtomicValue[] fields) {
 		this.fields = fields.clone();
 	}
 

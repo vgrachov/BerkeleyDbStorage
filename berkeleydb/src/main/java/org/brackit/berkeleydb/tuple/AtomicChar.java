@@ -27,7 +27,7 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.tuple;
 
-public class AtomicChar extends Atomic<Character> implements Comparable<AtomicChar> {
+public class AtomicChar extends AtomicValue<Character> implements Comparable<AtomicChar> {
 
 	private Character data;
 	

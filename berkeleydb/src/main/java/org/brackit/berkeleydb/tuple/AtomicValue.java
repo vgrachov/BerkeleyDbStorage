@@ -27,11 +27,11 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.tuple;
 
-public abstract class Atomic<T>{
+public abstract class AtomicValue<T>{
 
 	private String fieldName;
 
-	protected Atomic(String fieldName) {
+	protected AtomicValue(String fieldName) {
 		this.fieldName = fieldName;
 	}
 

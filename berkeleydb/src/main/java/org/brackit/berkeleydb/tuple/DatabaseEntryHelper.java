@@ -46,7 +46,7 @@ public final class DatabaseEntryHelper {
 		return DatabaseEntryFactoryHolder.instance;
 	}
 	
-	public final DatabaseEntry createDatabaseEntry(Atomic value){
+	public final DatabaseEntry createDatabaseEntry(AtomicValue value){
 		TupleOutput output = new TupleOutput();
 		if (value instanceof AtomicString)
 			output.writeString(((AtomicString)value).getData());
