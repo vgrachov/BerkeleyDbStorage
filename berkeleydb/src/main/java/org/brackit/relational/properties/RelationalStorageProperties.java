@@ -25,23 +25,41 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.properties;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+public class RelationalStorageProperties {
 
-public class DateBinding extends TupleBinding<Long> {
-
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	public enum StorageEngine{
+		BerkeleyDB,
+		LevelDB
 	}
-
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	
+	private RelationalStorageProperties() {
+		
 	}
-
+	
+	public static String getStoragePath(){
+		return "/home/vgrachov/Projects/db/";
+	}
+	
+	public static boolean inMemory(){
+		return false;
+	}
+	
+	public static boolean isTest(){
+		return true;
+	}
+	
+	public static StorageEngine getStorageEngine(){
+		return StorageEngine.BerkeleyDB;
+	}
+	
+	public static String getDatePattern(){
+		return "yyyy-MM-dd";
+	}
+	
+	public static String getTBLPath(){
+		return "/home/vgrachov/Projects/tpch/10mb/"; 
+	}
+	
 }

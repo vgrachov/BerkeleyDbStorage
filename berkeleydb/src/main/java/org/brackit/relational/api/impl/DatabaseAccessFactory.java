@@ -25,23 +25,38 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.api.impl;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+import org.brackit.berkeleydb.cursor.BerkeleydbDatabaseAccess;
+import org.brackit.relational.api.IDatabaseAccess;
+import org.brackit.relational.api.cursor.ITupleCursor;
+import org.brackit.relational.api.transaction.ITransaction;
+import org.brackit.relational.metadata.tuple.AtomicValue;
+import org.brackit.relational.metadata.tuple.Column;
+import org.brackit.relational.metadata.tuple.Tuple;
+import org.brackit.relational.properties.RelationalStorageProperties;
+import org.brackit.relational.properties.RelationalStorageProperties.StorageEngine;
 
-public class DateBinding extends TupleBinding<Long> {
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+
+public class DatabaseAccessFactory {
+	
+	private static final DatabaseAccessFactory DATABASE_ACCESS_FACTORY = new DatabaseAccessFactory();
+	
+	private DatabaseAccessFactory(){
+			
 	}
-
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	
+	public static DatabaseAccessFactory getInstance() {
+		return DATABASE_ACCESS_FACTORY;
 	}
-
+	
+	public IDatabaseAccess create(String databaseName){
+		StorageEngine storageEngine = RelationalStorageProperties.getStorageEngine();
+		if (storageEngine == StorageEngine.BerkeleyDB)
+			return new BerkeleydbDatabaseAccess(databaseName);
+		else
+			return null;
+	}
+	 
 }

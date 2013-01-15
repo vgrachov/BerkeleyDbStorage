@@ -25,23 +25,85 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.metadata.tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+public final class Column {
 
-public class DateBinding extends TupleBinding<Long> {
+	private final String columnName;
+	
+	private final ColumnType type;
+	
+	private final boolean isBelongToKey;
+	
+	private final boolean isDirectIndexExist;
+	
+	private final String databaseName;
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	
+	public Column(String databaseName, String columnName, ColumnType type, boolean isBelongToKey, boolean isDirectIndexExist) {
+		this.databaseName = databaseName;
+		this.columnName = columnName;
+		this.type = type;
+		this.isBelongToKey = isBelongToKey;
+		this.isDirectIndexExist = isDirectIndexExist;
+	}
+
+	public String getColumnName() {
+		return columnName;
+	}
+
+	public ColumnType getType() {
+		return type;
 	}
 
 	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	public String toString() {
+		return columnName+" - "+type+" - "+isBelongToKey+" - "+isDirectIndexExist;
 	}
 
+	public boolean isBelongToKey() {
+		return isBelongToKey;
+	}
+
+	public String getDatabaseName() {
+		return databaseName;
+	}
+
+	public boolean isDirectIndexExist() {
+		return isDirectIndexExist;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((columnName == null) ? 0 : columnName.hashCode());
+		result = prime * result
+				+ ((databaseName == null) ? 0 : databaseName.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Column other = (Column) obj;
+		if (columnName == null) {
+			if (other.columnName != null)
+				return false;
+		} else if (!columnName.equals(other.columnName))
+			return false;
+		if (databaseName == null) {
+			if (other.databaseName != null)
+				return false;
+		} else if (!databaseName.equals(other.databaseName))
+			return false;
+		return true;
+	}
+	
 }

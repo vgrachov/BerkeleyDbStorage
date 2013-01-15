@@ -27,21 +27,15 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
-import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.metadata.Schema;
-import org.brackit.relational.metadata.tuple.AtomicDouble;
-import org.brackit.relational.metadata.tuple.AtomicInteger;
-import org.brackit.relational.metadata.tuple.AtomicString;
-import org.brackit.relational.metadata.tuple.AtomicValue;
 import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
 import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.LockMode;
@@ -49,80 +43,73 @@ import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
 import com.sleepycat.db.Transaction;
 
-public class EqualMatchIndexSearchCursor implements ITupleCursor {
+public class FullIndexCursor implements ITupleCursor {
 
-	private static final Logger logger = Logger.getLogger(EqualMatchIndexSearchCursor.class);
-
+	private Column column;
 	private SecondaryCursor cursor;
-	
-	private final AtomicValue searchValue;
-	
-	private final Column column;
-	
+	private DatabaseEntry secondaryKey = new DatabaseEntry();
+	private DatabaseEntry primaryKey = new DatabaseEntry();
+	private DatabaseEntry primaryValue = new DatabaseEntry();
 	private RelationalTupleBinding tupleBinding;
-	
-	private DatabaseEntry searchKeyEntry;
-	private DatabaseEntry foundKeyEntry;
-	private DatabaseEntry foundDataEntry;
-	
-	private String databaseName;
-	private OperationStatus retVal;
+	private OperationStatus retVal = OperationStatus.NOTFOUND;
 	private final Transaction transaction;
-
-	EqualMatchIndexSearchCursor(String databaseName, Column column, AtomicValue value, Transaction transaction){
-		this.databaseName = databaseName;
+	
+	FullIndexCursor(Column column, Transaction transaction){
 		this.column = column;
-		this.searchValue = value;
 		this.transaction = transaction;
 	}
 	
 	public void open() {
-		logger.debug("Open cursor over database "+databaseName+" for column "+column.getColumnName());
-		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(databaseName);
+		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		try {
-			cursor=BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, null);
+			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, null);
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());
-		
-		TupleOutput searchKeySerialized = new TupleOutput();
-		if (searchValue instanceof AtomicString)
-			searchKeySerialized.writeString(((AtomicString)searchValue).getData());
-		else
-		if (searchValue instanceof AtomicInteger)
-			searchKeySerialized.writeInt(((AtomicInteger)searchValue).getData());
-		else
-		if (searchValue instanceof AtomicDouble)
-			searchKeySerialized.writeDouble(((AtomicDouble)searchValue).getData());
-		searchKeyEntry = new DatabaseEntry(searchKeySerialized.toByteArray()); 
-		
-		foundKeyEntry = new DatabaseEntry();
-		foundDataEntry = new DatabaseEntry();
-		//TODO: review move to next operation
-		try {
-			retVal = cursor.getSearchKey(searchKeyEntry, foundKeyEntry, foundDataEntry, LockMode.DEFAULT);
-		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	public Tuple next() {
-		if (retVal == OperationStatus.SUCCESS){
-			TupleInput foundKeySerialized = new TupleInput(foundKeyEntry.getData());
-			TupleInput foundDataSerialized = new TupleInput(foundDataEntry.getData());
-			Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+		if (retVal == OperationStatus.NOTFOUND){
 			try {
-				retVal = cursor.getNextDup(searchKeyEntry, foundKeyEntry, foundDataEntry, LockMode.DEFAULT);
+				retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
 			} catch (DatabaseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			return tuple;
-		}else
-			return null;
+			if (retVal!=OperationStatus.NOTFOUND){
+				TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
+				TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
+				return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+			}else
+				return null;
+		}else{
+			try {
+				retVal = cursor.getNextDup(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
+			} catch (DatabaseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (retVal!=OperationStatus.NOTFOUND){
+				TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
+				TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
+				return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+			}else{
+				try {
+					retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
+				} catch (DatabaseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (retVal!=OperationStatus.NOTFOUND){
+					TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
+					TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
+					return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				}else
+					return null;
+			}
+			
+		}
 	}
 
 	public void close() {
@@ -132,6 +119,7 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 	}
 
 }

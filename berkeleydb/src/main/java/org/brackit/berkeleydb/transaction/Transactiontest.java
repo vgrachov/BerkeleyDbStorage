@@ -1,29 +1,29 @@
 /*******************************************************************************
  * [New BSD License]
- *  Copyright (c) 2012, Volodymyr Grachov <vladimir.grachov@gmail.com>  
- *  All rights reserved.
- *  
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *      * Redistributions of source code must retain the above copyright
- *        notice, this list of conditions and the following disclaimer.
- *      * Redistributions in binary form must reproduce the above copyright
- *        notice, this list of conditions and the following disclaimer in the
- *        documentation and/or other materials provided with the distribution.
- *      * Neither the name of the Brackit Project Team nor the
- *        names of its contributors may be used to endorse or promote products
- *        derived from this software without specific prior written permission.
- *  
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- *  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *   Copyright (c) 2012-2013, Volodymyr Grachov <vladimir.grachov@gmail.com>  
+ *   All rights reserved.
+ *   
+ *   Redistribution and use in source and binary forms, with or without
+ *   modification, are permitted provided that the following conditions are met:
+ *       * Redistributions of source code must retain the above copyright
+ *         notice, this list of conditions and the following disclaimer.
+ *       * Redistributions in binary form must reproduce the above copyright
+ *         notice, this list of conditions and the following disclaimer in the
+ *         documentation and/or other materials provided with the distribution.
+ *       * Neither the name of the Brackit Project Team nor the
+ *         names of its contributors may be used to endorse or promote products
+ *         derived from this software without specific prior written permission.
+ *   
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ *   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 package org.brackit.berkeleydb.transaction;
 
@@ -32,6 +32,8 @@ import java.io.FileNotFoundException;
 
 import javax.sql.DataSource;
 
+import com.sleepycat.bind.tuple.TupleOutput;
+import com.sleepycat.db.CheckpointConfig;
 import com.sleepycat.db.Cursor;
 import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.Database;
@@ -52,7 +54,7 @@ import com.sleepycat.db.TransactionConfig;
  
 public class Transactiontest {
 
-	private static final String path = "c:/db2/";
+	private static final String path = "/home/vgrachov/Projects/test";
     private static final int buffLen = 100 * 1024 * 1024;
 	
 	/**
@@ -101,6 +103,7 @@ public class Transactiontest {
 	public static void main(String[] args) throws FileNotFoundException, DatabaseException {
         // Set up the environment.
         EnvironmentConfig myEnvConfig = new EnvironmentConfig();
+        
 
         // Region files are not backed by the filesystem, they are
         // backed by heap memory.
@@ -142,50 +145,32 @@ public class Transactiontest {
 		config.setTransactional(true);
 		config.setErrorStream(System.out);
 		config.setType(DatabaseType.BTREE);
-		config.setDirtyRead(false);
-		config.setReadUncommitted(true);
 
 
-		Database testDatabase = environment.openDatabase(null,"test2.db", null, config);
-		
+		Database testDatabase = environment.openDatabase(null,"test.db", null, config);
 
-		TransactionConfig transactionConfig = new TransactionConfig();
-		
-
-		
 		Transaction transaction = environment.beginTransaction(null, TransactionConfig.DEFAULT);
-		TransactionConfig transactionConfig2 = new TransactionConfig();
-		transactionConfig2.setReadUncommitted(true);
-		Transaction transaction1 = environment.beginTransaction(null, transactionConfig2);
-		
-		DatabaseEntry key = new DatabaseEntry("key".getBytes());
-		DatabaseEntry value = new DatabaseEntry("value".getBytes());
-		testDatabase.put(transaction, key, value);
-		//transaction.commit();
-		value = new DatabaseEntry();
-		OperationStatus status = testDatabase.get(transaction1, key, value,LockMode.DEFAULT);
-		System.out.println(status);
-		System.out.println(new String(value.getData()));
-		transaction1.commit();
+		long size = 0;
+		for (int i=0;i<100000;i++){
+			if (i % 10000==0){
+				System.out.println(i / 10000);
+				environment.checkpoint(CheckpointConfig.DEFAULT);
+			}
+			TupleOutput tupleOutput = new TupleOutput();
+			tupleOutput.writeInt(i);
 
-		DatabaseEntry key1 = new DatabaseEntry("key1".getBytes());
-		DatabaseEntry value1 = new DatabaseEntry("value1".getBytes());
-
-		testDatabase.put(transaction, key1, value1);
-		fullScan(transaction, testDatabase);
-		transaction.abort();
-		DatabaseEntry key2 = new DatabaseEntry("key2".getBytes());
-		DatabaseEntry value2 = new DatabaseEntry("value2".getBytes());
-		
-		testDatabase.put(transaction, key2, value2);
-		fullScan(transaction, testDatabase);
-		
-		//createDatabase(transaction, testDatabase);
+			TupleOutput tupleOutput1 = new TupleOutput();
+			tupleOutput1.writeString(String.valueOf(i));
+			
+			size+=tupleOutput.toByteArray().length + tupleOutput1.toByteArray().length;
+			DatabaseEntry key = new DatabaseEntry(tupleOutput.toByteArray());
+			DatabaseEntry value = new DatabaseEntry(tupleOutput1.toByteArray());
+			testDatabase.put(transaction, key, key);
+		}
 		transaction.commit();
-		testDatabase.sync();
 		testDatabase.close();
 		environment.close();
-		
+		System.out.println(size);
 
 	}
 

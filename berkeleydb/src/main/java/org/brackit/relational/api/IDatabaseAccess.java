@@ -25,77 +25,32 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.cursor;
+package org.brackit.relational.api;
 
-import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.binding.RelationalTupleBinding;
+
 import org.brackit.relational.api.cursor.ITupleCursor;
+import org.brackit.relational.api.transaction.ITransaction;
+import org.brackit.relational.metadata.tuple.AtomicValue;
+import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.db.Cursor;
-import com.sleepycat.db.CursorConfig;
-import com.sleepycat.db.DatabaseEntry;
-import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.LockMode;
-import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.Transaction;
 
-public class FullTableScanCursor extends BerkeleydbDatabaseAccess implements ITupleCursor {
+public interface IDatabaseAccess {
 
-	private static final Logger logger = Logger.getLogger(FullTableScanCursor.class);
+	boolean insert(Tuple tuple, ITransaction transaction);
 	
-	private Cursor cursor;
+	//TODO: implement
+	//boolean update(DatabaseEntry key, DatabaseEntry value);
 	
-	private final RelationalTupleBinding tupleBinding;
+	boolean delete(Tuple tuple, ITransaction transaction);
 	
-	private final String databaseName;
+	ITupleCursor getFullScanCursor(ITransaction transaction);
 	
-	private final Transaction transaction;
+	ITupleCursor getFullIndexCursor(Column column, ITransaction transaction);
 	
-	FullTableScanCursor(String databaseName, Transaction transaction){
-		super(databaseName);
-		this.databaseName = databaseName;
-		tupleBinding = new RelationalTupleBinding(schema.getColumns());
-		this.transaction = transaction;
-	}
+	ITupleCursor getRangeIndexScanCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, ITransaction transaction);
 	
-	public void open() {
-		try {
-			logger.debug("Open cursor for database "+databaseName);
-			cursor = dataBase.openCursor(transaction, CursorConfig.DEFAULT);
-		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
-
-	public Tuple next() {
-		DatabaseEntry elementKey = new DatabaseEntry();
-		DatabaseEntry elementData = new DatabaseEntry();
-		OperationStatus status = null;
-		try {
-			status = cursor.getNext(elementKey, elementData, LockMode.DEFAULT);
-		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if (status == OperationStatus.SUCCESS){
-			Tuple tuple = tupleBinding.smartEntryToObject(new TupleInput(elementKey.getData()), new TupleInput(elementData.getData()));
-			return tuple;
-		}
-		return null;
-	}
-
-	public void close() {
-		try {
-			cursor.close();
-		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
+	ITupleCursor getEqualMatchIndexSearchCursor(Column column, AtomicValue value, ITransaction transaction);
+	
 }

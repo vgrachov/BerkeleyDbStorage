@@ -25,23 +25,31 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.metadata;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+import org.brackit.relational.metadata.tuple.Column;
 
-public class DateBinding extends TupleBinding<Long> {
+/**
+ * Hold the schema of table
+ *
+ */
+public final class Schema {
+ 
+	private final Column[] columns;
+	
+	private final String databaseName;
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	public Schema(Column[] columns, String databaseName) {
+		this.columns = columns.clone();
+		this.databaseName = databaseName;
 	}
 
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	public Column[] getColumns() {
+		return columns;
 	}
 
+	public String getDatabaseName() {
+		return databaseName;
+	}
+	
 }

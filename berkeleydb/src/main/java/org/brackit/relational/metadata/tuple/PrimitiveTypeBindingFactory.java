@@ -25,23 +25,37 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.metadata.tuple;
 
+import org.brackit.berkeleydb.binding.typebinding.DateBinding;
+
+import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
 
-public class DateBinding extends TupleBinding<Long> {
+public final class PrimitiveTypeBindingFactory {
+	
+	private static DateBinding dateBinding = new DateBinding();
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	private PrimitiveTypeBindingFactory(){
+		
 	}
-
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	
+	public static EntryBinding databaseBinding(ColumnType columnType){
+		if (columnType == ColumnType.String)
+			return TupleBinding.getPrimitiveBinding(String.class);
+		else
+		if (columnType == ColumnType.Integer)
+			return TupleBinding.getPrimitiveBinding(Integer.class);
+		else
+		if (columnType == ColumnType.Double)
+			return TupleBinding.getPrimitiveBinding(Double.class);
+		if (columnType == ColumnType.Char)
+			return TupleBinding.getPrimitiveBinding(Character.class);
+		else
+		if (columnType == ColumnType.Date)
+			return dateBinding;
+		else
+			throw new IllegalArgumentException("Column type has not corresponding binding");
 	}
 
 }

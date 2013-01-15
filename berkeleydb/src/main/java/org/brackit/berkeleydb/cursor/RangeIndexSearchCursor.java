@@ -1,51 +1,49 @@
 /*******************************************************************************
  * [New BSD License]
- *  Copyright (c) 2012, Volodymyr Grachov <vladimir.grachov@gmail.com>  
- *  All rights reserved.
- *  
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *      * Redistributions of source code must retain the above copyright
- *        notice, this list of conditions and the following disclaimer.
- *      * Redistributions in binary form must reproduce the above copyright
- *        notice, this list of conditions and the following disclaimer in the
- *        documentation and/or other materials provided with the distribution.
- *      * Neither the name of the Brackit Project Team nor the
- *        names of its contributors may be used to endorse or promote products
- *        derived from this software without specific prior written permission.
- *  
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- *  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *   Copyright (c) 2012-2013, Volodymyr Grachov <vladimir.grachov@gmail.com>  
+ *   All rights reserved.
+ *   
+ *   Redistribution and use in source and binary forms, with or without
+ *   modification, are permitted provided that the following conditions are met:
+ *       * Redistributions of source code must retain the above copyright
+ *         notice, this list of conditions and the following disclaimer.
+ *       * Redistributions in binary form must reproduce the above copyright
+ *         notice, this list of conditions and the following disclaimer in the
+ *         documentation and/or other materials provided with the distribution.
+ *       * Neither the name of the Brackit Project Team nor the
+ *         names of its contributors may be used to endorse or promote products
+ *         derived from this software without specific prior written permission.
+ *   
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ *   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
-import java.util.Arrays;
-import java.util.Date;
-
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.berkeleydb.tuple.AtomicValue;
-import org.brackit.berkeleydb.tuple.AtomicChar;
-import org.brackit.berkeleydb.tuple.AtomicDate;
-import org.brackit.berkeleydb.tuple.AtomicDouble;
-import org.brackit.berkeleydb.tuple.AtomicInteger;
-import org.brackit.berkeleydb.tuple.AtomicString;
-import org.brackit.berkeleydb.tuple.Column;
-import org.brackit.berkeleydb.tuple.ColumnType;
-import org.brackit.berkeleydb.tuple.DatabaseBindingHelper;
-import org.brackit.berkeleydb.tuple.DatabaseEntryHelper;
-import org.brackit.berkeleydb.tuple.Tuple;
+import org.brackit.relational.api.cursor.ITupleCursor;
+import org.brackit.relational.metadata.Schema;
+import org.brackit.relational.metadata.tuple.AtomicChar;
+import org.brackit.relational.metadata.tuple.AtomicDate;
+import org.brackit.relational.metadata.tuple.AtomicDouble;
+import org.brackit.relational.metadata.tuple.AtomicInteger;
+import org.brackit.relational.metadata.tuple.AtomicString;
+import org.brackit.relational.metadata.tuple.AtomicValue;
+import org.brackit.relational.metadata.tuple.Column;
+import org.brackit.relational.metadata.tuple.ColumnType;
+import org.brackit.relational.metadata.tuple.PrimitiveTypeBindingFactory;
+import org.brackit.relational.metadata.tuple.DatabaseEntryFactory;
+import org.brackit.relational.metadata.tuple.Tuple;
 
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.bind.tuple.TupleBinding;
@@ -80,11 +78,11 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 	private final EntryBinding binding;
 	private final Transaction transaction;
 	
-	public RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey){
+	RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey){
 		this(column,leftKey,rightKey,null);
 	}
 	
-	public RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, Transaction transaction){
+	RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, Transaction transaction){
 		logger.debug("Create range search cursor for table "+column.getDatabaseName()+" and column"+column.getColumnName());
 		logger.debug("Left range "+leftKey);
 		logger.debug("Right range "+rightKey);
@@ -92,12 +90,12 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 		this.leftKey = leftKey;
 		this.column = column;
 		if (leftKey!=null)
-			currentSecondaryIndexKey = DatabaseEntryHelper.getInstance().createDatabaseEntry(leftKey);
+			currentSecondaryIndexKey = DatabaseEntryFactory.createDatabaseEntry(leftKey);
 		else
 			currentSecondaryIndexKey = null;
-		binding = DatabaseBindingHelper.getInstance().databaseBinding(column.getType());
+		this.binding = PrimitiveTypeBindingFactory.databaseBinding(column.getType());
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
-		tupleBinding = new RelationalTupleBinding(schema.getColumns());
+		this.tupleBinding = new RelationalTupleBinding(schema.getColumns());
 		this.transaction = transaction;
 	}
 	
@@ -134,7 +132,7 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 			compare = ((AtomicChar)rightKey).getData().compareTo(currentSecondaryKey);
 		}else
 		if (column.getType() == ColumnType.Date){
-			Date currentSecondaryKey = (Date)binding.entryToObject(currentSecondaryIndexKey);
+			Long currentSecondaryKey = (Long)binding.entryToObject(currentSecondaryIndexKey);
 			compare = ((AtomicDate)rightKey).getData().compareTo(currentSecondaryKey);
 		}
 		return compare;

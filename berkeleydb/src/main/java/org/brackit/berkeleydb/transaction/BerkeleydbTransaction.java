@@ -25,77 +25,40 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.cursor;
+package org.brackit.berkeleydb.transaction;
 
-import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.relational.api.cursor.ITupleCursor;
-import org.brackit.relational.metadata.tuple.Tuple;
+import org.brackit.relational.api.transaction.ITransaction;
+import org.brackit.relational.api.transaction.TransactionException;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.db.Cursor;
-import com.sleepycat.db.CursorConfig;
-import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.LockMode;
-import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.Transaction;
 
-public class FullTableScanCursor extends BerkeleydbDatabaseAccess implements ITupleCursor {
+public class BerkeleydbTransaction implements ITransaction {
 
-	private static final Logger logger = Logger.getLogger(FullTableScanCursor.class);
-	
-	private Cursor cursor;
-	
-	private final RelationalTupleBinding tupleBinding;
-	
-	private final String databaseName;
-	
 	private final Transaction transaction;
 	
-	FullTableScanCursor(String databaseName, Transaction transaction){
-		super(databaseName);
-		this.databaseName = databaseName;
-		tupleBinding = new RelationalTupleBinding(schema.getColumns());
+	public BerkeleydbTransaction(Transaction transaction){
 		this.transaction = transaction;
 	}
 	
-	public void open() {
+	public void commit() throws TransactionException {
 		try {
-			logger.debug("Open cursor for database "+databaseName);
-			cursor = dataBase.openCursor(transaction, CursorConfig.DEFAULT);
+			transaction.commit();
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new TransactionException(e.getMessage(),e);
 		}
-		
 	}
 
-	public Tuple next() {
-		DatabaseEntry elementKey = new DatabaseEntry();
-		DatabaseEntry elementData = new DatabaseEntry();
-		OperationStatus status = null;
+	public void abort() throws TransactionException {
 		try {
-			status = cursor.getNext(elementKey, elementData, LockMode.DEFAULT);
+			transaction.abort();
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new TransactionException(e.getMessage(),e);
 		}
-		if (status == OperationStatus.SUCCESS){
-			Tuple tuple = tupleBinding.smartEntryToObject(new TupleInput(elementKey.getData()), new TupleInput(elementData.getData()));
-			return tuple;
-		}
-		return null;
 	}
-
-	public void close() {
-		try {
-			cursor.close();
-		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	
+	public Transaction getTransaction(){
+		return transaction;
 	}
 
 }

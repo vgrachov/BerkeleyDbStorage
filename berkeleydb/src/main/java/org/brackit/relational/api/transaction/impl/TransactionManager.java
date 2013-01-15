@@ -25,23 +25,35 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.api.transaction.impl;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+import org.brackit.berkeleydb.transaction.BerkeleydbTransactionManager;
+import org.brackit.relational.api.transaction.ITransaction;
+import org.brackit.relational.api.transaction.ITransactionManager;
+import org.brackit.relational.api.transaction.IsolationLevel;
+import org.brackit.relational.api.transaction.TransactionException;
+import org.brackit.relational.properties.RelationalStorageProperties;
 
-public class DateBinding extends TupleBinding<Long> {
+public class TransactionManager implements ITransactionManager {
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	private static final ITransactionManager transactionManager = new TransactionManager();
+	private final ITransactionManager transactionManagerImpl;
+	
+	private TransactionManager(){
+		RelationalStorageProperties.StorageEngine storageEngine = RelationalStorageProperties.getStorageEngine();
+		if (storageEngine == RelationalStorageProperties.StorageEngine.BerkeleyDB)
+			transactionManagerImpl = new BerkeleydbTransactionManager();
+		else
+			transactionManagerImpl = null;
+		
+	}
+	
+	public static ITransactionManager getInstance(){
+		return transactionManager;
 	}
 
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	public ITransaction begin(IsolationLevel isolationLevel) throws TransactionException {
+		return transactionManagerImpl.begin(isolationLevel);
 	}
 
 }

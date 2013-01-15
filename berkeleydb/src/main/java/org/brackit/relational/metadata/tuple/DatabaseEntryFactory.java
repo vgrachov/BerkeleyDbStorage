@@ -25,23 +25,47 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.metadata.tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
+import java.io.IOException;
+
+import org.apache.log4j.Logger;
+
 import com.sleepycat.bind.tuple.TupleOutput;
+import com.sleepycat.db.DatabaseEntry;
 
-public class DateBinding extends TupleBinding<Long> {
-
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+public final class DatabaseEntryFactory {
+	
+	private static final Logger logger = Logger.getLogger(DatabaseEntryFactory.class);
+	
+	private DatabaseEntryFactory(){
+		
 	}
-
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	
+	public static DatabaseEntry createDatabaseEntry(AtomicValue value){
+		TupleOutput output = new TupleOutput();
+		if (value instanceof AtomicString)
+			output.writeString(((AtomicString)value).getData());
+		else
+		if (value instanceof AtomicInteger)
+			output.writeInt(((AtomicInteger)value).getData());
+		else
+		if (value instanceof AtomicDouble)
+			output.writeDouble(((AtomicDouble)value).getData());
+		else
+		if (value instanceof AtomicDate)
+			output.writeLong(((AtomicDate)value).getData());
+		else
+		if (value instanceof AtomicChar)
+			output.writeChar(((AtomicChar)value).getData());
+		DatabaseEntry databaseEntry = new DatabaseEntry(output.toByteArray());
+		try {
+			output.close();
+			return databaseEntry;
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			return null;
+		}
 	}
-
+	
 }

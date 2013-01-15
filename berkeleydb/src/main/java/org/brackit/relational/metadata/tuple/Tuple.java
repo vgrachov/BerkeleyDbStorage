@@ -25,23 +25,41 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.metadata.tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+import java.io.Serializable;
 
-public class DateBinding extends TupleBinding<Long> {
+public class Tuple implements Serializable {
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	private static final long serialVersionUID = -2684841752401552856L;
+	
+	private AtomicValue[] fields;
+
+	public AtomicValue[] getFields() {
+		return fields;
+	}
+
+	public void setFields(AtomicValue[] fields) {
+		this.fields = fields.clone();
+	}
+
+	public Tuple(){
+		
+	}
+	
+	public Tuple(AtomicValue[] fields) {
+		this.fields = fields.clone();
 	}
 
 	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	public String toString(){
+		StringBuilder builder = new StringBuilder();
+		for (int i=0;i<fields.length;i++){
+			if (i!=0)
+				builder.append("|");
+			builder.append(fields[i]);
+		}
+		return builder.toString();
 	}
-
+	
 }

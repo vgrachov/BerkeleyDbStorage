@@ -1,45 +1,53 @@
 /*******************************************************************************
  * [New BSD License]
- *  Copyright (c) 2012, Volodymyr Grachov <vladimir.grachov@gmail.com>  
- *  All rights reserved.
- *  
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *      * Redistributions of source code must retain the above copyright
- *        notice, this list of conditions and the following disclaimer.
- *      * Redistributions in binary form must reproduce the above copyright
- *        notice, this list of conditions and the following disclaimer in the
- *        documentation and/or other materials provided with the distribution.
- *      * Neither the name of the Brackit Project Team nor the
- *        names of its contributors may be used to endorse or promote products
- *        derived from this software without specific prior written permission.
- *  
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- *  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *   Copyright (c) 2012-2013, Volodymyr Grachov <vladimir.grachov@gmail.com>  
+ *   All rights reserved.
+ *   
+ *   Redistribution and use in source and binary forms, with or without
+ *   modification, are permitted provided that the following conditions are met:
+ *       * Redistributions of source code must retain the above copyright
+ *         notice, this list of conditions and the following disclaimer.
+ *       * Redistributions in binary form must reproduce the above copyright
+ *         notice, this list of conditions and the following disclaimer in the
+ *         documentation and/or other materials provided with the distribution.
+ *       * Neither the name of the Brackit Project Team nor the
+ *         names of its contributors may be used to endorse or promote products
+ *         derived from this software without specific prior written permission.
+ *   
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ *   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 package org.brackit.berkeleydb.environment;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.Schema;
 import org.brackit.berkeleydb.binding.IndexValueCreator;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.tuple.Column;
+import org.brackit.relational.metadata.Schema;
+import org.brackit.relational.metadata.tuple.Column;
+import org.brackit.relational.properties.RelationalStorageProperties;
 
+import com.sleepycat.db.CheckpointConfig;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
 import com.sleepycat.db.DatabaseEntry;
@@ -64,32 +72,48 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 
     private static final String CATALOG = "catalog";
 	
-	
-	private static class BerkeleyDBEnvironmentHolder{
-		private static IBerkeleyDBEnvironment instance = new BerkeleyDBEnvironment();
-	}
+	private static final IBerkeleyDBEnvironment instance = new BerkeleyDBEnvironment();
 
-    private com.sleepycat.db.Environment env;
+    private Environment env;
     private Database catalog;
     private Map<String,Database> databaseMap;
     private Map<Column,SecondaryDatabase> indexMap;
+    private static final String berkeleyDbVMParam = "-Djava.library.path";
 	
+    private void isBerkeleyLibraryInit() throws IllegalArgumentException{
+    	RuntimeMXBean RuntimemxBean = ManagementFactory.getRuntimeMXBean();
+    	List<String> arguments = RuntimemxBean.getInputArguments();
+    	boolean isBerkeleyDbVMParamFound = false;
+    	for (int i=0;i<arguments.size();i++){
+    		String argument = arguments.get(i);
+    		String param = argument.split("=")[0].trim();
+    		if (berkeleyDbVMParam.equals(param))
+    			isBerkeleyDbVMParamFound = true;
+    	}
+    	if (!isBerkeleyDbVMParamFound)
+    		throw new IllegalArgumentException("Set "+berkeleyDbVMParam+" as VM param");
+    }
+    
 	private BerkeleyDBEnvironment(){
+		isBerkeleyLibraryInit();
 		logger.debug("Init database environment");
-	
-        EnvironmentConfig myEnvConfig = new EnvironmentConfig();
+			
+        EnvironmentConfig environmentConfig = new EnvironmentConfig();
 
         // Region files are not backed by the filesystem, they are
         // backed by heap memory.
-        myEnvConfig.setPrivate(true);
-        myEnvConfig.setAllowCreate(true);
-        myEnvConfig.setInitializeCache(true);
-        myEnvConfig.setInitializeLocking(true);
-        myEnvConfig.setInitializeLogging(true);
-        myEnvConfig.setThreaded(true);
+        environmentConfig.setPrivate(true);
+        environmentConfig.setAllowCreate(true);
+        environmentConfig.setInitializeCache(true);
+        environmentConfig.setInitializeLocking(true); 
+        environmentConfig.setInitializeLogging(true); 
+        environmentConfig.setThreaded(true); 
+        
+        //environmentConfig.setInitializeCDB(true); --
 
 
-        myEnvConfig.setTransactional(true);
+        environmentConfig.setTransactional(true);
+        
         // EnvironmentConfig.setThreaded(true) is the default behavior
         // in Java, so we do not have to do anything to cause the
         // environment handle to be free-threaded.
@@ -98,33 +122,35 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
         // detection. Also indicate that the transaction that has
         // performed the least amount of write activity to
         // receive the deadlock notification, if any.
-        myEnvConfig.setLockDetectMode(LockDetectMode.MINWRITE);
+        environmentConfig.setLockDetectMode(LockDetectMode.MINWRITE);
 
         // Specify in-memory logging
-        //myEnvConfig.setLogInMemory(true);
+        //environmentConfig.setLogInMemory(true);
         // Specify the size of the in-memory log buffer
         // Must be large enough to handle the log data created by
         // the largest transaction.
-        //myEnvConfig.setLogBufferSize(10 * 1024 * 1024);
+        //environmentConfig.setLogBufferSize(10 * 1024 * 1024);
         // Specify the size of the in-memory cache
         // Set it large enough so that it won't page.
-        myEnvConfig.setCacheSize(10 * 1024 * 1024);
-        myEnvConfig.setLogAutoRemove(true);
-
+        environmentConfig.setCacheSize(10 * 1024 * 1024);
+        environmentConfig.setLogAutoRemove(true);
         
-
-
         // Set the Berkeley DB Catalog config.
         DatabaseConfig catalogDBConfig = new DatabaseConfig();
+        
         catalogDBConfig.setTransactional(true);
+        
         catalogDBConfig.setAllowCreate(true);
         catalogDBConfig.setSortedDuplicates(false);
         catalogDBConfig.setType(DatabaseType.BTREE);
 
         
         try{
-        	env = new Environment(new File("c:/db10mb/"), myEnvConfig);
-        	
+        	/*Properties properties = new Properties();
+        	properties.load(new FileInputStream("storage.properties"));
+        	String path = properties.getProperty("database.storage.path");*/
+        	env = new Environment(new File(RelationalStorageProperties.getStoragePath()), environmentConfig);
+
         	catalog = env.openDatabase(null,CATALOG, null, catalogDBConfig);
         } catch (DatabaseException e) {
 			logger.error(e.getMessage());
@@ -149,12 +175,6 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 			DatabaseConfig databaseConfig = new DatabaseConfig();
 			databaseConfig.setTransactional(true);
 			databaseConfig.setAllowCreate(false);
-			if (databaseName.equals("orders"))
-				databaseConfig.setType(DatabaseType.BTREE);
-			else
-				databaseConfig.setType(DatabaseType.BTREE);
-			databaseConfig.setCacheSize(100000000);
-			
 			
 			Database db = null;
 			try {
@@ -173,11 +193,11 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 			for (int i=0;i<schema.getColumns().length;i++){
 				if (schema.getColumns()[i].isDirectIndexExist()){
 					SecondaryConfig secondaryConfig = (SecondaryConfig)getDefaultSecondDatabaseConfig(true).cloneConfig();
-					IndexValueCreator indexValueCreator = new IndexValueCreator(relationalTupleBinding, schema.getColumns()[i]);
+					IndexValueCreator indexValueCreator = new IndexValueCreator(schema, relationalTupleBinding, schema.getColumns()[i]);
 					String indexDatabaseName = null;
 					indexDatabaseName = databaseName+"_"+schema.getColumns()[i].getColumnName()+"_index";
 					secondaryConfig.setKeyCreator(indexValueCreator);
-					secondaryConfig.setCacheSize(100000000);
+					//secondaryConfig.setCacheSize(100000000);
 					
 					SecondaryDatabase secondaryDatabase = null;
 					try {
@@ -199,7 +219,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 	
 	public static SecondaryConfig getDefaultSecondDatabaseConfig(boolean allowCreate){
 		SecondaryConfig secondaryConfig = new SecondaryConfig();
-		secondaryConfig.setTransactional(true);
+		secondaryConfig.setTransactional(true); 
 		secondaryConfig.setAllowCreate(allowCreate);
 		secondaryConfig.setAllowPopulate(!allowCreate);
 		secondaryConfig.setSortedDuplicates(true);
@@ -229,7 +249,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 	}
 	
 	public static IBerkeleyDBEnvironment getInstance(){
-		return BerkeleyDBEnvironmentHolder.instance; 
+		return instance; 
 	}
     /* (non-Javadoc)
 	 * @see org.brackit.berkeleydb.IBerkeleyDBEnvironment#getEnv()
@@ -249,6 +269,11 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 	 * @see org.brackit.berkeleydb.IBerkeleyDBEnvironment#close()
 	 */
     public void close() {
+    	try {
+			env.checkpoint(CheckpointConfig.DEFAULT);
+		} catch (DatabaseException e) {
+			logger.error(e.getMessage());
+		}
     	Iterator<Map.Entry<String, Database>> databaseIterator = databaseMap.entrySet().iterator();
     	while (databaseIterator.hasNext()){
     		Map.Entry<String, Database> entry = (Map.Entry<String, Database>)databaseIterator.next();

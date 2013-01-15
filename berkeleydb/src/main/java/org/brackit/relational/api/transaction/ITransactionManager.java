@@ -25,23 +25,17 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.api.transaction;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+public interface ITransactionManager {
 
-public class DateBinding extends TupleBinding<Long> {
-
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
-	}
-
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
-	}
-
+	/**
+	 * Open transaction. 
+	 * Selected isolation level will be applied to all operations ( cursors and (key,value) manipulation operations) inside transaction.
+	 * @param isolationLevel
+	 * @return
+	 * @throws TransactionException
+	 */
+	ITransaction begin(IsolationLevel isolationLevel) throws TransactionException;
+	
 }

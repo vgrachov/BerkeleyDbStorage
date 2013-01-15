@@ -25,23 +25,26 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.api;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+import org.brackit.berkeleydb.exception.KeyDuplicationException;
+import org.brackit.relational.metadata.Schema;
 
-public class DateBinding extends TupleBinding<Long> {
+public interface ICatalog {
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
-	}
+	/**
+	 * Create Primary database with all indexes, represented in secondary databases
+	 * @param schema - database schema
+	 */
+	public abstract void createDatabase(Schema schema)
+			throws KeyDuplicationException;
 
-	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
-	}
+	public abstract Schema getSchemaByDatabaseName(String databaseName);
+
+	/**
+	 * Delete database with all indexes
+	 * @param databaseName
+	 */
+	public abstract boolean deleteDatabase(String databaseName);
 
 }

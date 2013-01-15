@@ -25,23 +25,28 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.berkeleydb.binding.typebinding;
+package org.brackit.relational.metadata.tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
+public class AtomicString extends AtomicValue implements Comparable<AtomicString> {
 
-public class DateBinding extends TupleBinding<Long> {
+	private String data;
+	
+	public AtomicString(String fieldName,String data){
+		//super(fieldName);
+		this.data = data;
+	}
 
-	@Override
-	public Long entryToObject(TupleInput input) {
-		long date = input.readLong();
-		return date;
+	public String getData() {
+		return data;
 	}
 
 	@Override
-	public void objectToEntry(Long date, TupleOutput output) {
-		output.writeLong(date);
+	public String toString() {
+		return data;
+	}
+
+	public int compareTo(AtomicString o) {
+		return data.compareTo(o.getData());
 	}
 
 }
