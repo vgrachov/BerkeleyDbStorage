@@ -32,23 +32,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
-import junit.framework.Assert;
-
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.cursor.BerkeleydbDatabaseAccess;
-import org.brackit.berkeleydb.cursor.FullTableScanCursor;
-import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.relational.api.ICatalog;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
 import org.brackit.relational.api.transaction.ITransaction;
-import org.brackit.relational.api.transaction.IsolationLevel;
 import org.brackit.relational.api.transaction.TransactionException;
-import org.brackit.relational.api.transaction.impl.TransactionManager;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicDouble;
 import org.brackit.relational.metadata.tuple.AtomicInteger;
@@ -58,54 +48,41 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.Assert;
 
-import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.Transaction;
-import com.sleepycat.db.TransactionConfig;
+public class Partsupp_Table_Create extends BasicTPCHFiller {
 
-public class Region_Table_Create extends BasicTCPHTest {
-
-	private static ICatalog catalog;
-	private static final String tableName = "region";
-	private static final Logger logger = Logger.getLogger(Region_Table_Create.class);
-	private static IBerkeleyDBEnvironment berkeleyDBEnvironment;
+	private static final String tableName = "partsupp";
+	private static final Logger logger = Logger.getLogger(Partsupp_Table_Create.class);
 	
-	@BeforeClass
-	public static void init(){
-		berkeleyDBEnvironment = BerkeleyDBEnvironment.getInstance();
-		catalog = Catalog.getInstance();
-	}
-
-	@Test
+	@Override
 	public void createTable(){
-		catalog = Catalog.getInstance();
-		Schema schema = new Schema(new Column[]{
-				new Column(tableName,"r_regionkey", ColumnType.Integer,true,true),
-				new Column(tableName,"r_name", ColumnType.String,false,true),
-				new Column(tableName,"r_comment", ColumnType.String,false,false)
+		Schema schema = new Schema(new Column[] {
+				new Column(tableName,"ps_partkey", ColumnType.Integer,true,true),
+				new Column(tableName,"ps_suppkey", ColumnType.Integer,true,true),
+				new Column(tableName,"ps_availqty", ColumnType.Integer,false,false),
+				new Column(tableName,"ps_supplycost", ColumnType.Double,false,false),
+				new Column(tableName,"ps_comment", ColumnType.String,false,false)
 		}, tableName);
-		try{
+		try {
 			catalog.createDatabase(schema);
 		} catch (KeyDuplicationException e) {
 			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
-		Schema schema2 = catalog.getSchemaByDatabaseName(tableName);
-		for (int i=0;i<schema2.getColumns().length;i++){
-			logger.debug("Print column "+schema2.getColumns()[i]);
+		Schema checkSchema = catalog.getSchemaByDatabaseName(tableName);
+		for (int i=0;i<checkSchema.getColumns().length;i++) {
+			logger.debug("Print column "+checkSchema.getColumns()[i]);
 		}
-		Assert.assertEquals(schema2.getDatabaseName(), tableName);
-		Assert.assertEquals(schema2.getColumns().length, 3);
-		Assert.assertEquals(schema2.getColumns()[0].getColumnName(), "R_REGIONKEY".toLowerCase());
-		Assert.assertEquals(schema2.getColumns()[1].getColumnName(), "R_NAME".toLowerCase());
-		Assert.assertEquals(schema2.getColumns()[2].getColumnName(), "R_COMMENT".toLowerCase());
-		Assert.assertEquals(schema2.getColumns()[1].isDirectIndexExist(), true);
+		Assert.assertEquals(checkSchema.getDatabaseName(), tableName);
+		Assert.assertEquals(checkSchema.getColumns().length, 5);
+		Assert.assertEquals(checkSchema.getColumns()[0].getColumnName(), "PS_PARTKEY".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[1].getColumnName(), "PS_SUPPKEY".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[1].isDirectIndexExist(), true);
+		Assert.assertEquals(checkSchema.getColumns()[3].getColumnName(), "PS_SUPPLYCOST".toLowerCase());
 	}
 
-	@Test
+	@Override
 	public void fillTable() throws TransactionException{
 		ITransaction transaction = beginTransaction();
 		
@@ -113,22 +90,26 @@ public class Region_Table_Create extends BasicTCPHTest {
 		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
 		BufferedReader lineItemInput = null;
 		try {
-			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"region.tbl"));
+			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"partsupp.tbl"));
 		} catch (FileNotFoundException e) {
 			Assert.fail(e.getMessage());
 		}
 		String line = null;
 		int readLines=0;
 		try {
-			while ((line=lineItemInput.readLine())!=null){
+			while ((line=lineItemInput.readLine())!=null) {
+				if (readLines%1000==0)
+					logger.debug(readLines);
+				readLines++;
 				String[] entries = line.split("\\|");
-				AtomicValue[] fields = new AtomicValue[3];
-				fields[0] = new AtomicInteger("r_regionkey", Integer.valueOf(entries[0]));
-				fields[1] = new AtomicString("r_name", entries[1]);
-				fields[2] = new AtomicString("r_comment", entries[2]);
+				AtomicValue[] fields = new AtomicValue[5];
+				fields[0] = new AtomicInteger("ps_partkey", Integer.valueOf(entries[0]));
+				fields[1] = new AtomicInteger("ps_suppkey", Integer.valueOf(entries[1]));
+				fields[2] = new AtomicInteger("ps_availqty", Integer.valueOf(entries[2]));
+				fields[3] = new AtomicDouble("ps_supplycost", Double.valueOf(entries[3]));
+				fields[4] = new AtomicString("ps_comment", entries[4]);
 				Tuple tuple = new Tuple(fields);
 				databaseAccess.insert(tuple,transaction);
-				readLines++;
 			}
 		} catch (IOException e) {
 			logger.error(e.getMessage());
@@ -140,19 +121,19 @@ public class Region_Table_Create extends BasicTCPHTest {
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;
-		while((tuple=cursor.next())!=null){
+		while((tuple=cursor.next())!=null) {
+			if (counter%1000==0)
+				logger.debug(counter);
 			counter++;
 		}
-		logger.info("Rows : "+counter);
 		cursor.close();
 		commit(transaction);
+		
+		logger.debug("Rows inserted "+counter);
 		Assert.assertEquals(counter, readLines);
 	}
-	
-	@AfterClass
-	public static void close(){
-		berkeleyDBEnvironment.close();
-	}
 
-	
+	public String getTableName() {
+		return tableName;
+	}
 }

@@ -27,21 +27,14 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.tpch;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.cursor.FullIndexCursor;
-import org.brackit.berkeleydb.cursor.RangeIndexSearchCursor;
-import org.brackit.berkeleydb.cursor.FullTableScanCursor;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
@@ -53,17 +46,12 @@ import org.brackit.relational.api.transaction.impl.TransactionManager;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicDate;
 import org.brackit.relational.metadata.tuple.AtomicDouble;
-import org.brackit.relational.metadata.tuple.AtomicString;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.sleepycat.db.DatabaseException;
-
-public class Lineitem_Table_Iterator extends BasicTCPHTest{
+public class Lineitem_Table_Iterator{
 
 	private static final Logger logger = Logger.getLogger(Lineitem_Table_Iterator.class);
 	private static String tableName = "lineitem"; 
@@ -183,5 +171,22 @@ public class Lineitem_Table_Iterator extends BasicTCPHTest{
 	public static void close(){
 		BerkeleyDBEnvironment.getInstance().close();
 	}
+
+	public void commit(ITransaction transaction) throws TransactionException{
+		try {
+			if (transaction!=null)
+				transaction.commit();
+		} catch (TransactionException e) {
+			if (transaction != null)
+				transaction.abort();
+			throw e;
+		}
+	}
 	
+	public ITransaction beginTransaction() throws TransactionException{
+		ITransactionManager transactionManager = TransactionManager.getInstance();
+		ITransaction transaction = transactionManager.begin(IsolationLevel.ReadUnComitted);
+		return transaction;
+	}
+
 }

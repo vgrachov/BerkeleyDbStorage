@@ -31,28 +31,15 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-
-import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.cursor.BerkeleydbDatabaseAccess;
-import org.brackit.berkeleydb.cursor.FullTableScanCursor;
-import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.relational.api.ICatalog;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
 import org.brackit.relational.api.transaction.ITransaction;
-import org.brackit.relational.api.transaction.IsolationLevel;
 import org.brackit.relational.api.transaction.TransactionException;
-import org.brackit.relational.api.transaction.impl.TransactionManager;
 import org.brackit.relational.metadata.Schema;
-import org.brackit.relational.metadata.tuple.AtomicChar;
-import org.brackit.relational.metadata.tuple.AtomicDate;
 import org.brackit.relational.metadata.tuple.AtomicDouble;
 import org.brackit.relational.metadata.tuple.AtomicInteger;
 import org.brackit.relational.metadata.tuple.AtomicString;
@@ -61,40 +48,23 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.Assert;
 
-import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.Transaction;
-import com.sleepycat.db.TransactionConfig;
+public class Supplier_Create_Table extends BasicTPCHFiller {
 
-public class Orders_Table_Create extends BasicTCPHTest{
+	private static final String tableName = "supplier";
+	private static final Logger logger = Logger.getLogger(Supplier_Create_Table.class);
 
-	private static ICatalog catalog;
-	private static final String tableName = "orders";
-	private static final Logger logger = Logger.getLogger(Orders_Table_Create.class);
-	private static IBerkeleyDBEnvironment berkeleyDBEnvironment;
-	
-	@BeforeClass
-	public static void init(){
-		berkeleyDBEnvironment = BerkeleyDBEnvironment.getInstance();
-		catalog = Catalog.getInstance();
-	}
-
-	@Test
+	@Override
 	public void createTable(){
-		catalog = Catalog.getInstance();
 		Schema schema = new Schema(new Column[]{
-				new Column(tableName,"o_orderkey", ColumnType.Integer,true,true),
-				new Column(tableName,"o_custkey", ColumnType.Integer,false,true),
-				new Column(tableName,"o_orderstatus", ColumnType.Char,false,false),
-				new Column(tableName,"o_totalprice", ColumnType.Double,false,false),
-				new Column(tableName,"o_orderdate", ColumnType.Date,false,true),
-				new Column(tableName,"o_orderpriority", ColumnType.String,false,false),
-				new Column(tableName,"o_clerk", ColumnType.String,false,false),
-				new Column(tableName,"o_shippriority", ColumnType.Integer,false,false),
-				new Column(tableName,"o_comment", ColumnType.String,false,false)
+				new Column(tableName,"s_suppkey", ColumnType.Integer,true,true),
+				new Column(tableName,"s_name", ColumnType.String,false,true),
+				new Column(tableName,"s_address", ColumnType.String,false,false),
+				new Column(tableName,"s_nationkey", ColumnType.Integer,false,true),
+				new Column(tableName,"s_phone", ColumnType.String,false,false),
+				new Column(tableName,"s_acctbal", ColumnType.Double,false,false),
+				new Column(tableName,"s_comment", ColumnType.String,false,false)
 		}, tableName);
 		try{
 			catalog.createDatabase(schema);
@@ -102,79 +72,71 @@ public class Orders_Table_Create extends BasicTCPHTest{
 			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
-		Schema schema2 = catalog.getSchemaByDatabaseName(tableName);
-		for (int i=0;i<schema2.getColumns().length;i++){
-			logger.debug("Print column "+schema2.getColumns()[i]);
+		Schema checkSchema = catalog.getSchemaByDatabaseName(tableName);
+		for (int i=0;i<checkSchema.getColumns().length;i++) {
+			logger.debug("Print column "+checkSchema.getColumns()[i]);
 		}
-		Assert.assertEquals(schema2.getDatabaseName(), tableName);
-		Assert.assertEquals(schema2.getColumns().length, 9);
-		Assert.assertEquals(schema2.getColumns()[0].getColumnName(), "o_orderkey");
-		Assert.assertEquals(schema2.getColumns()[1].isDirectIndexExist(), true);
-		Assert.assertEquals(schema2.getColumns()[7].getColumnName(), "o_shippriority");
+		Assert.assertEquals(checkSchema.getDatabaseName(), tableName);
+		Assert.assertEquals(checkSchema.getColumns().length, 7);
+		Assert.assertEquals(checkSchema.getColumns()[0].getColumnName(), "S_SUPPKEY".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[1].getColumnName(), "S_NAME".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[2].getColumnName(), "S_ADDRESS".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[3].getColumnName(), "S_NATIONKEY".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[4].getColumnName(), "S_PHONE".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[5].getColumnName(), "S_ACCTBAL".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[6].getColumnName(), "S_COMMENT".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[1].isDirectIndexExist(), true);
+		Assert.assertEquals(checkSchema.getColumns()[0].isDirectIndexExist(), true);
 	}
 
-	@Test
-	public void fillTable() throws TransactionException{
+	@Override
+	public void fillTable() throws TransactionException {
 		ITransaction transaction = beginTransaction();
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create(tableName);
 		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
 		BufferedReader lineItemInput = null;
 		try {
-			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"orders.tbl"));
+			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"supplier.tbl"));
 		} catch (FileNotFoundException e) {
 			Assert.fail(e.getMessage());
 		}
 		String line = null;
 		int readLines=0;
-		SimpleDateFormat dateFormat = new SimpleDateFormat(RelationalStorageProperties.getDatePattern());
 		try {
-			while ((line=lineItemInput.readLine())!=null){
+			while ((line=lineItemInput.readLine())!=null) {
 				String[] entries = line.split("\\|");
-				AtomicValue[] fields = new AtomicValue[9];
-				fields[0] = new AtomicInteger("o_orderkey", Integer.valueOf(entries[0]));
-				fields[1] = new AtomicInteger("o_custkey", Integer.valueOf(entries[1]));
-				fields[2] = new AtomicChar("o_orderstatus", entries[2].charAt(0));
-				fields[3] = new AtomicDouble("o_totalprice", Double.valueOf(entries[3]));
-				try{
-					fields[4] = new AtomicDate("o_orderdate", dateFormat.parse(entries[4]).getTime());
-				}catch (Exception e) {
-					logger.error(e.getMessage());
-					Assert.fail(e.getMessage());
-				}
-
-				//fields[4] = new AtomicString("o_orderdate", entries[4]);
-				fields[5] = new AtomicString("o_orderpriority", entries[5]);
-				fields[6] = new AtomicString("o_clerk", entries[6]);
-				fields[7] = new AtomicInteger("o_shippriority", Integer.valueOf(entries[7]));
-				fields[8] = new AtomicString("o_comment", entries[8]);
+				AtomicValue[] fields = new AtomicValue[7];
+				fields[0] = new AtomicInteger("s_suppkey", Integer.valueOf(entries[0]));
+				fields[1] = new AtomicString("s_name", entries[1]);
+				fields[2] = new AtomicString("s_address", entries[2]);
+				fields[3] = new AtomicInteger("s_nationkey", Integer.valueOf(entries[3]));
+				fields[4] = new AtomicString("s_phone", entries[4]);
+				fields[5] = new AtomicDouble("s_acctbal", Double.valueOf(entries[5]));
+				fields[6] = new AtomicString("s_comment", entries[6]);
 				Tuple tuple = new Tuple(fields);
 				databaseAccess.insert(tuple,transaction);
 				readLines++;
 			}
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
 		commit(transaction);
 		transaction = beginTransaction();
-		
 		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;
-		while((tuple=cursor.next())!=null){
+		while((tuple=cursor.next())!=null) {
+			logger.debug(tuple);
 			counter++;
 		}
 		cursor.close();
 		commit(transaction);
-		
-		logger.debug("Row inserted "+counter);
+		logger.debug("Row count "+counter);
 		Assert.assertEquals(counter, readLines);
 	}
-	
-	@AfterClass
-	public static void close(){
-		berkeleyDBEnvironment.close();
+
+	public String getTableName() {
+		return tableName;
 	}
-	
 }

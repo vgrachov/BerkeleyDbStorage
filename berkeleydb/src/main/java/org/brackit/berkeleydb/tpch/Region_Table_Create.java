@@ -33,10 +33,7 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.relational.api.ICatalog;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
@@ -50,30 +47,19 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
-public class Nation_Table_Create extends BasicTCPHTest{
+public class Region_Table_Create extends BasicTPCHFiller {
 
-	private static ICatalog catalog;
-	private static final String tableName = "nation";
-	private static final Logger logger = Logger.getLogger(Nation_Table_Create.class);
+	private static final String tableName = "region";
+	private static final Logger logger = Logger.getLogger(Region_Table_Create.class);
 	
-	@BeforeClass
-	public static void init(){
-		catalog = Catalog.getInstance();
-	}
-	
-	@Test
+	@Override
 	public void createTable(){
-		catalog = Catalog.getInstance();
 		Schema schema = new Schema(new Column[]{
-				new Column(tableName,"n_nationkey", ColumnType.Integer,true,true),
-				new Column(tableName,"n_name", ColumnType.String,false,true),
-				new Column(tableName,"n_regionkey", ColumnType.Integer,false,true),
-				new Column(tableName,"n_comment", ColumnType.String,false,false)
+				new Column(tableName,"r_regionkey", ColumnType.Integer,true,true),
+				new Column(tableName,"r_name", ColumnType.String,false,true),
+				new Column(tableName,"r_comment", ColumnType.String,false,false)
 		}, tableName);
 		try{
 			catalog.createDatabase(schema);
@@ -81,44 +67,45 @@ public class Nation_Table_Create extends BasicTCPHTest{
 			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
-		Schema schema2 = catalog.getSchemaByDatabaseName(tableName);
-		for (int i=0;i<schema2.getColumns().length;i++){
-			logger.debug("Print column "+schema2.getColumns()[i]);
+		Schema checkSchema = catalog.getSchemaByDatabaseName(tableName);
+		for (int i=0;i<checkSchema.getColumns().length;i++){
+			logger.debug("Print column "+checkSchema.getColumns()[i]);
 		}
-		Assert.assertEquals(schema2.getDatabaseName(), tableName);
-		Assert.assertEquals(schema2.getColumns().length, 4);
-		Assert.assertEquals(schema2.getColumns()[0].getColumnName(), "n_nationkey");
-		Assert.assertEquals(schema2.getColumns()[1].isDirectIndexExist(), true);
-		Assert.assertEquals(schema2.getColumns()[3].getColumnName(), "n_comment");
+		Assert.assertEquals(checkSchema.getDatabaseName(), tableName);
+		Assert.assertEquals(checkSchema.getColumns().length, 3);
+		Assert.assertEquals(checkSchema.getColumns()[0].getColumnName(), "R_REGIONKEY".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[1].getColumnName(), "R_NAME".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[2].getColumnName(), "R_COMMENT".toLowerCase());
+		Assert.assertEquals(checkSchema.getColumns()[1].isDirectIndexExist(), true);
 	}
 
-	@Test
+	@Override
 	public void fillTable() throws TransactionException{
 		ITransaction transaction = beginTransaction();
 		
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create(tableName);
+		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
 		BufferedReader lineItemInput = null;
 		try {
-			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"nation.tbl"));
+			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"region.tbl"));
 		} catch (FileNotFoundException e) {
 			Assert.fail(e.getMessage());
 		}
 		String line = null;
 		int readLines=0;
 		try {
-			
-			while ((line=lineItemInput.readLine())!=null){
+			while ((line=lineItemInput.readLine())!=null) {
 				String[] entries = line.split("\\|");
-				AtomicValue[] fields = new AtomicValue[4];
-				fields[0] = new AtomicInteger("n_nationkey", Integer.valueOf(entries[0]));
-				fields[1] = new AtomicString("n_name", entries[1]);
-				fields[2] = new AtomicInteger("n_regionkey", Integer.valueOf(entries[2]));
-				fields[3] = new AtomicString("n_comment", entries[3]);
+				AtomicValue[] fields = new AtomicValue[3];
+				fields[0] = new AtomicInteger("r_regionkey", Integer.valueOf(entries[0]));
+				fields[1] = new AtomicString("r_name", entries[1]);
+				fields[2] = new AtomicString("r_comment", entries[2]);
 				Tuple tuple = new Tuple(fields);
 				databaseAccess.insert(tuple,transaction);
 				readLines++;
 			}
 		} catch (IOException e) {
+			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
 		commit(transaction);
@@ -127,19 +114,16 @@ public class Nation_Table_Create extends BasicTCPHTest{
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;
-		while((tuple=cursor.next())!=null){
-			logger.debug(tuple);
+		while((tuple=cursor.next())!=null) {
 			counter++;
 		}
+		logger.info("Rows : "+counter);
 		cursor.close();
 		commit(transaction);
-		logger.debug("Row inserted "+counter);
 		Assert.assertEquals(counter, readLines);
 	}
 
-	@AfterClass
-	public static void close(){
-		BerkeleyDBEnvironment.getInstance().close();
+	public String getTableName() {
+		return tableName;
 	}
-	
 }

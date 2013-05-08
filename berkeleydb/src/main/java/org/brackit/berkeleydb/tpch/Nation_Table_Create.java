@@ -32,26 +32,15 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
-import junit.framework.Assert;
-
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.cursor.BerkeleydbDatabaseAccess;
-import org.brackit.berkeleydb.cursor.FullTableScanCursor;
-import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.berkeleydb.environment.IBerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.relational.api.ICatalog;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
 import org.brackit.relational.api.transaction.ITransaction;
-import org.brackit.relational.api.transaction.IsolationLevel;
 import org.brackit.relational.api.transaction.TransactionException;
-import org.brackit.relational.api.transaction.impl.TransactionManager;
 import org.brackit.relational.metadata.Schema;
-import org.brackit.relational.metadata.tuple.AtomicChar;
-import org.brackit.relational.metadata.tuple.AtomicDouble;
 import org.brackit.relational.metadata.tuple.AtomicInteger;
 import org.brackit.relational.metadata.tuple.AtomicString;
 import org.brackit.relational.metadata.tuple.AtomicValue;
@@ -59,92 +48,63 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.Assert;
 
-import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.Transaction;
-import com.sleepycat.db.TransactionConfig;
+public class Nation_Table_Create extends BasicTPCHFiller{
 
-public class Part_Table_Create extends BasicTCPHTest{
-
-	private static ICatalog catalog;
-	private static final String tableName = "part";
-	private static final Logger logger = Logger.getLogger(Part_Table_Create.class);
-	private static IBerkeleyDBEnvironment berkeleyDBEnvironment;
+	private static final String tableName = "nation";
+	private static final Logger logger = Logger.getLogger(Nation_Table_Create.class);
 	
-	@BeforeClass
-	public static void init(){
-		berkeleyDBEnvironment = BerkeleyDBEnvironment.getInstance();
-		catalog = Catalog.getInstance();
-	}
-
-	@Test
+	@Override
 	public void createTable(){
-		catalog = Catalog.getInstance();
-		Schema schema = new Schema(new Column[]{
-				new Column(tableName,"p_partkey", ColumnType.Integer,true,true),
-				new Column(tableName,"p_name", ColumnType.String,false,true),
-				new Column(tableName,"p_mfgr", ColumnType.String,false,false),
-				new Column(tableName,"p_brand", ColumnType.String,false,true),
-				new Column(tableName,"p_type", ColumnType.String,false,true),
-				new Column(tableName,"p_size", ColumnType.Integer,false,true),
-				new Column(tableName,"p_container", ColumnType.String,false,true),
-				new Column(tableName,"p_retailprice", ColumnType.Double,false,false),
-				new Column(tableName,"p_comment", ColumnType.String,false,false)
+		Schema schema = new Schema(new Column[] {
+				new Column(tableName,"n_nationkey", ColumnType.Integer,true,true),
+				new Column(tableName,"n_name", ColumnType.String,false,true),
+				new Column(tableName,"n_regionkey", ColumnType.Integer,false,true),
+				new Column(tableName,"n_comment", ColumnType.String,false,false)
 		}, tableName);
-		try{
+		try {
 			catalog.createDatabase(schema);
 		} catch (KeyDuplicationException e) {
 			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
 		Schema schema2 = catalog.getSchemaByDatabaseName(tableName);
-		for (int i=0;i<schema2.getColumns().length;i++){
+		for (int i=0;i<schema2.getColumns().length;i++) {
 			logger.debug("Print column "+schema2.getColumns()[i]);
 		}
 		Assert.assertEquals(schema2.getDatabaseName(), tableName);
-		Assert.assertEquals(schema2.getColumns().length, 9);
-		Assert.assertEquals(schema2.getColumns()[0].getColumnName(), "P_PARTKEY".toLowerCase());
-		Assert.assertEquals(schema2.getColumns()[2].getColumnName(), "P_MFGR".toLowerCase());
+		Assert.assertEquals(schema2.getColumns().length, 4);
+		Assert.assertEquals(schema2.getColumns()[0].getColumnName(), "n_nationkey");
 		Assert.assertEquals(schema2.getColumns()[1].isDirectIndexExist(), true);
-		Assert.assertEquals(schema2.getColumns()[7].getColumnName(), "P_RETAILPRICE".toLowerCase());
+		Assert.assertEquals(schema2.getColumns()[3].getColumnName(), "n_comment");
 	}
 
-	@Test
+	@Override
 	public void fillTable() throws TransactionException{
 		ITransaction transaction = beginTransaction();
-		
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create(tableName);
-		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
 		BufferedReader lineItemInput = null;
 		try {
-			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"part.tbl"));
+			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"nation.tbl"));
 		} catch (FileNotFoundException e) {
 			Assert.fail(e.getMessage());
 		}
 		String line = null;
 		int readLines=0;
 		try {
-			while ((line=lineItemInput.readLine())!=null){
+			while ((line=lineItemInput.readLine())!=null) {
 				String[] entries = line.split("\\|");
-				AtomicValue[] fields = new AtomicValue[9];
-				fields[0] = new AtomicInteger("p_partkey", Integer.valueOf(entries[0]));
-				fields[1] = new AtomicString("p_name", entries[1]);
-				fields[2] = new AtomicString("p_mfgr", entries[2]);
-				fields[3] = new AtomicString("p_brand", entries[3]);
-				fields[4] = new AtomicString("p_type", entries[4]);
-				fields[5] = new AtomicInteger("p_size", Integer.valueOf(entries[5]));
-				fields[6] = new AtomicString("p_container", entries[6]);
-				fields[7] = new AtomicDouble("p_retailprice", Double.valueOf(entries[7]));
-				fields[8] = new AtomicString("p_comment", entries[8]);
+				AtomicValue[] fields = new AtomicValue[4];
+				fields[0] = new AtomicInteger("n_nationkey", Integer.valueOf(entries[0]));
+				fields[1] = new AtomicString("n_name", entries[1]);
+				fields[2] = new AtomicInteger("n_regionkey", Integer.valueOf(entries[2]));
+				fields[3] = new AtomicString("n_comment", entries[3]);
 				Tuple tuple = new Tuple(fields);
 				databaseAccess.insert(tuple,transaction);
 				readLines++;
 			}
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			Assert.fail(e.getMessage());
 		}
 		commit(transaction);
@@ -153,20 +113,17 @@ public class Part_Table_Create extends BasicTCPHTest{
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;
-		while((tuple=cursor.next())!=null){
+		while((tuple=cursor.next())!=null) {
+			logger.debug(tuple);
 			counter++;
 		}
 		cursor.close();
 		commit(transaction);
 		logger.debug("Row inserted "+counter);
 		Assert.assertEquals(counter, readLines);
-		
-	}
-	
-	@AfterClass
-	public static void close(){
-		berkeleyDBEnvironment.close();
 	}
 
-	
+	public String getTableName() {
+		return tableName;
+	}
 }

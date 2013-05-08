@@ -54,7 +54,7 @@ public class FullTableScanCursor extends BerkeleydbDatabaseAccess implements ITu
 	
 	private final Transaction transaction;
 	
-	FullTableScanCursor(String databaseName, Transaction transaction){
+	public FullTableScanCursor(String databaseName, Transaction transaction){
 		super(databaseName);
 		this.databaseName = databaseName;
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());

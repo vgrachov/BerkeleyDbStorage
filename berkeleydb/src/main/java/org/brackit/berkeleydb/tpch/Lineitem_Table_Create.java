@@ -28,34 +28,19 @@
 package org.brackit.berkeleydb.tpch;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-
-import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.cursor.BerkeleydbDatabaseAccess;
-import org.brackit.berkeleydb.cursor.FullTableScanCursor;
-import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
 import org.brackit.relational.api.transaction.ITransaction;
-import org.brackit.relational.api.transaction.IsolationLevel;
 import org.brackit.relational.api.transaction.TransactionException;
-import org.brackit.relational.api.transaction.impl.TransactionManager;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicChar;
 import org.brackit.relational.metadata.tuple.AtomicDate;
@@ -67,18 +52,14 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
-import org.junit.AfterClass;
-import org.junit.Test;
+import org.junit.Assert;
 
-import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.Transaction;
-import com.sleepycat.db.TransactionConfig;
+public class Lineitem_Table_Create extends BasicTPCHFiller {
 
-public class Lineitem_Table_Create extends BasicTCPHTest {
-
+	private static final String tableName = "lineitem";
 	private Logger logger = Logger.getLogger(Lineitem_Table_Create.class);
 
-	@Test
+	@Override
 	public void createTable(){
 		logger.debug("Create lineitem table");
 		Column[] columns = new Column[]{
@@ -110,8 +91,8 @@ public class Lineitem_Table_Create extends BasicTCPHTest {
 		logger.debug("Table create is finish");
 	}
 	
-	@Test
-	public void fillTable() throws IOException, TransactionException{
+	@Override
+	public void fillTable() throws TransactionException{
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create("lineitem");
 		BufferedReader lineItemInput = null;
 		try {
@@ -170,16 +151,8 @@ public class Lineitem_Table_Create extends BasicTCPHTest {
 			if (transaction != null)
 				transaction.commit();
 		} catch (TransactionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.fatal(e.getMessage());
 		}
-/*		Collections.sort(l_shipdates);
-		for (Date d:l_shipdates){
-			writer.write(dateFormat.format(d));
-			writer.newLine();
-		}
-		writer.close();
-*/		//logger.info("Data size : keys = "+BerkeleydbDatabaseAccess.sizeKey+" values = "+BerkeleydbDatabaseAccess.sizeValue);
 		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create("lineitem").getFullScanCursor(transaction);
 				
 		cursor.open();
@@ -193,9 +166,7 @@ public class Lineitem_Table_Create extends BasicTCPHTest {
 		
 	}
 	
-	@AfterClass
-	public static void close(){
-		BerkeleyDBEnvironment.getInstance().close();
+	public String getTableName() {
+		return tableName;
 	}
-	
 }

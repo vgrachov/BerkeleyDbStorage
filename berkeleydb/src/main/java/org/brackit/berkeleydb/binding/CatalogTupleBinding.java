@@ -63,5 +63,4 @@ public class CatalogTupleBinding extends TupleBinding<Schema> {
 			output.writeBoolean(schema.getColumns()[i].isDirectIndexExist());
 		}
 	}
-
 }

@@ -32,13 +32,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
-import junit.framework.Assert;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.catalog.Catalog;
-import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
-import org.brackit.relational.api.ICatalog;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.impl.DatabaseAccessFactory;
@@ -53,31 +49,16 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.Assert;
 
-public class Customer_Table_Create extends BasicTCPHTest {
+public class Customer_Table_Create extends BasicTPCHFiller {
 	
 	private static final Logger logger = Logger.getLogger(Customer_Table_Create.class);
 	private static final String tableName = "customer";
 	
-	private static ICatalog catalog;
-	
-	@BeforeClass
-	public static void init(){
-		catalog = Catalog.getInstance();
-	}
-	
-	
-	public void deleteCreateDeleteCreateTest(){
-		createTable();
-	}
-	
-	@Test
-	public void createTable(){
-		catalog = Catalog.getInstance();
-		Schema schema = new Schema(new Column[]{
+	@Override
+	public void createTable() {
+		Schema schema = new Schema(new Column[] {
 				new Column(tableName,"c_custkey", ColumnType.Integer,true,true),
 				new Column(tableName,"c_name", ColumnType.String,false,true),
 				new Column(tableName,"c_address", ColumnType.String,false,false),
@@ -87,7 +68,7 @@ public class Customer_Table_Create extends BasicTCPHTest {
 				new Column(tableName,"c_mktsegment", ColumnType.String,false,true),
 				new Column(tableName,"c_comment", ColumnType.String,false,false)
 		}, tableName);
-		try{
+		try {
 			catalog.createDatabase(schema);
 		} catch (KeyDuplicationException e) {
 			logger.error(e.getMessage());
@@ -110,7 +91,7 @@ public class Customer_Table_Create extends BasicTCPHTest {
 		return delete;
 	}
 	
-	@Test
+	@Override
 	public void fillTable() throws TransactionException{
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create(tableName);
 		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
@@ -124,7 +105,6 @@ public class Customer_Table_Create extends BasicTCPHTest {
 		String line = null;
 		int readLines=0;
 		try {
-			
 			while ((line=lineItemInput.readLine())!=null){
 				String[] entries = line.split("\\|");
 				AtomicValue[] fields = new AtomicValue[8];
@@ -149,7 +129,7 @@ public class Customer_Table_Create extends BasicTCPHTest {
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;
-		while((tuple =cursor.next())!=null){
+		while((tuple =cursor.next())!=null) {
 			logger.debug(tuple);
 			counter++;
 		}
@@ -158,10 +138,8 @@ public class Customer_Table_Create extends BasicTCPHTest {
 		Assert.assertEquals(readLines, counter);
 		commit(transaction);
 	}
-
-	@AfterClass
-	public static void close(){
-		BerkeleyDBEnvironment.getInstance().close();
-	}
 	
+	public String getTableName() {
+		return tableName;
+	}
 }
