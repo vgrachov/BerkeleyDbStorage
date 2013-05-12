@@ -27,7 +27,18 @@
  ******************************************************************************/
 package org.brackit.relational.properties;
 
+/**
+ * This class represent all main properties confugured within project.
+ * @author Volodymyr Grachov
+ *
+ */
 public class RelationalStorageProperties {
+
+	// set storage path as JVM argument
+	private static final String storagePath = System.getProperty("berkeley_db_path");
+
+	// set path to TBL files as JVM argument
+	private static final String tblPath = System.getProperty("tbl_path");
 
 	public enum StorageEngine{
 		BerkeleyDB,
@@ -39,7 +50,7 @@ public class RelationalStorageProperties {
 	}
 	
 	public static String getStoragePath(){
-		return "/home/vgrachov/Projects/db/";
+		return storagePath;
 	}
 	
 	public static boolean inMemory(){
@@ -59,7 +70,10 @@ public class RelationalStorageProperties {
 	}
 	
 	public static String getTBLPath(){
-		return "/home/vgrachov/Projects/tpch/10mb/"; 
+		return tblPath; 
 	}
 	
+	public static Integer getPageSize() {
+		return 32768;
+	}
 }
