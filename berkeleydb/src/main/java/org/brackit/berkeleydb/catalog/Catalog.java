@@ -37,8 +37,7 @@ import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.relational.api.ICatalog;
 import org.brackit.relational.metadata.Schema;
-import org.brackit.relational.metadata.tuple.Column;
-import org.brackit.relational.metadata.tuple.ColumnType;
+import org.brackit.relational.properties.RelationalStorageProperties;
 
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.db.Database;
@@ -87,11 +86,15 @@ public final class Catalog implements ICatalog {
 		return true;
 	}
 	
+	/**
+	 * Create primary database without any secondary.
+	 */
 	private boolean createPrimaryDatabase(Schema schema, Transaction transaction) throws FileNotFoundException, DatabaseException{
 		DatabaseConfig databaseConfig = new DatabaseConfig();
 		databaseConfig.setTransactional(true); 
 		databaseConfig.setAllowCreate(true);
 		databaseConfig.setType(DatabaseType.BTREE);
+		databaseConfig.setPageSize(RelationalStorageProperties.getPageSize());
 		
 		logger.info("Page size :" + databaseConfig.getPageSize());
 
@@ -100,17 +103,20 @@ public final class Catalog implements ICatalog {
 		return true;
 	}
 
-	
+	/**
+	 * This method create secondary databases for primary one, base on index fields in Schema.
+	 */
 	private boolean createIndexes(Schema schema, Transaction transaction) throws FileNotFoundException, DatabaseException{
 		DatabaseConfig databaseConfig = new DatabaseConfig();
 		databaseConfig.setTransactional(true);
 		databaseConfig.setAllowCreate(true);
 		databaseConfig.setType(DatabaseType.BTREE);
+		databaseConfig.setPageSize(RelationalStorageProperties.getPageSize());
 		Database primaryDatabase = environment.openDatabase(null, schema.getDatabaseName(), null, databaseConfig);
 		RelationalTupleBinding relationalTupleBinding = new RelationalTupleBinding(schema.getColumns());
 		SecondaryConfig secondaryConfig = BerkeleyDBEnvironment.getDefaultSecondDatabaseConfig(true);
 		for (int i=0;i<schema.getColumns().length;i++)
-			if (schema.getColumns()[i].isDirectIndexExist()){
+			if (schema.getColumns()[i].isDirectIndexExist()) {
 				IndexValueCreator indexValueCreator = new IndexValueCreator(schema, relationalTupleBinding, schema.getColumns()[i]);
 				SecondaryConfig indexDatabaseConfiguration = (SecondaryConfig)secondaryConfig.cloneConfig();
 				indexDatabaseConfiguration.setKeyCreator(indexValueCreator);
@@ -128,7 +134,7 @@ public final class Catalog implements ICatalog {
 	 */
 	public void createDatabase(Schema schema) throws KeyDuplicationException{
 		Transaction transaction = null;
-		try{
+		try {
 			transaction = environment.beginTransaction(null, TransactionConfig.DEFAULT);
 			logger.debug("Add schema");
 			addDatabaseToCatalog(schema,transaction);
@@ -137,25 +143,16 @@ public final class Catalog implements ICatalog {
 			logger.debug("Create indexes");
 			createIndexes(schema,transaction);
 			transaction.commit();
-		}catch (DatabaseException e) {
-			if (transaction!=null)
-				try {
-					transaction.abort();
-				} catch (DatabaseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-		}catch (KeyDuplicationException e) {
-			if (transaction!=null)
-				try {
-					transaction.abort();
-				} catch (DatabaseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+		} catch (DatabaseException e) {
+			logger.error(e.getMessage());
+			quiteAbortTransaction(transaction);
+		} catch (KeyDuplicationException e) {
+			logger.error(e.getMessage());
+			quiteAbortTransaction(transaction);
 			throw e;
 		} catch (FileNotFoundException e) {
 			logger.error(e.getMessage());
+			quiteAbortTransaction(transaction);
 		}
 	}
 	
@@ -169,45 +166,44 @@ public final class Catalog implements ICatalog {
 		DatabaseEntry key = new DatabaseEntry(databaseName.getBytes());
 		DatabaseEntry schemaEntry = new DatabaseEntry();
 		OperationStatus status = null;
-		try{
+		try {
 			status = catalogDB.get(null, key, schemaEntry, LockMode.DEFAULT);
-		}catch (DatabaseException e) {
+		} catch (DatabaseException e) {
 			logger.error(e.getMessage());
 			return null;
 		}
 		logger.debug("Search status "+status);
-		if (status == OperationStatus.SUCCESS){
+		if (status == OperationStatus.SUCCESS) {
 			CatalogTupleBinding catalogTupleBinding = new CatalogTupleBinding();
 			TupleInput serializedSchema = new TupleInput(schemaEntry.getData());
 			Schema schema = catalogTupleBinding.entryToObject(serializedSchema);
 			return schema;
-		}else
+		} else {
+			logger.fatal("Schema for database "+databaseName+" is not found");
 			return null;
+		}
 	}
 	
-	private void deleteDatabaseFromCatalog(String databaseName, Transaction transaction){
+	private boolean deleteDatabaseFromCatalog(String databaseName, Transaction transaction){
 		DatabaseEntry keyEntry = new DatabaseEntry(databaseName.getBytes());
-		//TODO:review
 		try {
 			OperationStatus operationStatus = catalogDB.delete(transaction,keyEntry);
+			return operationStatus == OperationStatus.SUCCESS;
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new RuntimeException(e);
 		}
-		//if (operationStatus == OperationStatus.NOTFOUND)
-			//throw new DatabaseNotFoundException("Database "+databaseName+" is not found");
 	}
 
 	private void deletePrimaryDatabase(String databaseName, Transaction transaction){
-		DatabaseEntry keyEntry = new DatabaseEntry(databaseName.getBytes());
 		try {
 			environment.removeDatabase(transaction, databaseName, databaseName);
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new RuntimeException(e);
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getMessage());
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -224,15 +220,18 @@ public final class Catalog implements ICatalog {
 			transaction.commit();
 			return true;
 		}catch (DatabaseException e) {
-			if (transaction!=null)
-				try {
-					transaction.abort();
-				} catch (DatabaseException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+			quiteAbortTransaction(transaction);
 			return false;
 		}
 	}
 	
+	private static final void quiteAbortTransaction(Transaction transaction) {
+		if (transaction!=null)
+			try {
+				transaction.abort();
+			} catch (DatabaseException e) {
+				logger.error(e.getMessage());
+				throw new RuntimeException(e);
+			}		
+	}
 }
