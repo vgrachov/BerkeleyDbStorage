@@ -27,6 +27,9 @@
  ******************************************************************************/
 package org.brackit.relational.metadata;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.brackit.relational.metadata.tuple.Column;
 
 /**
@@ -38,6 +41,8 @@ public final class Schema {
 	private final Column[] columns;
 	
 	private final String databaseName;
+	
+	private Set<String> columnsSet;
 
 	public Schema(Column[] columns, String databaseName) {
 		this.columns = columns.clone();
@@ -52,4 +57,14 @@ public final class Schema {
 		return databaseName;
 	}
 	
+	public Set<String> getColumnsAsSet() {
+		if (columnsSet == null) {
+			columnsSet = new HashSet<String>();
+			for (int i=0; i<columns.length; i++)
+				columnsSet.add(columns[i].getColumnName());
+			return columnsSet;
+		} else {
+			return columnsSet;
+		}
+	}
 }

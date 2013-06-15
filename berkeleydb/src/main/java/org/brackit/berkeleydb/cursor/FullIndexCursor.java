@@ -27,6 +27,8 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
+import java.util.Set;
+
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
@@ -36,6 +38,7 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
 import com.sleepycat.bind.tuple.TupleInput;
+import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.LockMode;
@@ -53,16 +56,18 @@ public class FullIndexCursor implements ITupleCursor {
 	private RelationalTupleBinding tupleBinding;
 	private OperationStatus retVal = OperationStatus.NOTFOUND;
 	private final Transaction transaction;
+	private Set<String> projectionFields;
 	
-	FullIndexCursor(Column column, Transaction transaction){
+	FullIndexCursor(Column column, Transaction transaction, Set<String> projectionFields){
 		this.column = column;
 		this.transaction = transaction;
+		this.projectionFields = projectionFields;
 	}
 	
 	public void open() {
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		try {
-			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, null);
+			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, CursorConfig.DIRTY_READ);
 		} catch (DatabaseException e) {
 			e.printStackTrace();
 		}
@@ -72,39 +77,42 @@ public class FullIndexCursor implements ITupleCursor {
 	public Tuple next() {
 		if (retVal == OperationStatus.NOTFOUND){
 			try {
-				retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
+				retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DIRTY_READ);
 			} catch (DatabaseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			if (retVal!=OperationStatus.NOTFOUND){
-				TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
-				TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
-				return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				//TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
+				//TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
+				//return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				return new Tuple();
 			}else
 				return null;
 		}else{
 			try {
-				retVal = cursor.getNextDup(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
+				retVal = cursor.getNextDup(secondaryKey, primaryKey, primaryValue, LockMode.DIRTY_READ);
 			} catch (DatabaseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			if (retVal!=OperationStatus.NOTFOUND){
-				TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
-				TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
-				return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				//TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
+				//TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
+				//return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				return new Tuple();
 			}else{
 				try {
-					retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
+					retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DIRTY_READ);
 				} catch (DatabaseException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				if (retVal!=OperationStatus.NOTFOUND){
-					TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
-					TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
-					return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+					//TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
+					//TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
+					//return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+					return new Tuple();
 				}else
 					return null;
 			}

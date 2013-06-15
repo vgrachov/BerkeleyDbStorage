@@ -27,7 +27,6 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.binding;
 
-import org.apache.log4j.Logger;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicChar;
 import org.brackit.relational.metadata.tuple.AtomicDate;
@@ -46,8 +45,6 @@ import com.sleepycat.db.SecondaryDatabase;
 import com.sleepycat.db.SecondaryKeyCreator;
 
 public final class IndexValueCreator implements SecondaryKeyCreator {
-
-	private static final Logger logger = Logger.getLogger(IndexValueCreator.class);
 	
 	private final RelationalTupleBinding tupleBinding;
 	private final Column index;
@@ -63,7 +60,7 @@ public final class IndexValueCreator implements SecondaryKeyCreator {
 			DatabaseEntry key, DatabaseEntry data, DatabaseEntry result) {
 		TupleInput keyInput = new TupleInput(key.getData());
 		TupleInput dataInput = new TupleInput(data.getData());
-		Tuple tuple = tupleBinding.smartEntryToObject(keyInput, dataInput);
+		Tuple tuple = tupleBinding.smartEntryToObject(keyInput, dataInput, schema.getColumnsAsSet());
 		TupleOutput resultSerialized = new TupleOutput();
 		AtomicValue[] fields = tuple.getFields();
 		for (int i=0;i<schema.getColumns().length;i++){

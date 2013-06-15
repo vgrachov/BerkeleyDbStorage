@@ -50,6 +50,8 @@ import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.Assert;
 
+import com.google.common.collect.ImmutableSet;
+
 public class Nation_Table_Create extends BasicTPCHFiller{
 
 	private static final String tableName = "nation";
@@ -109,7 +111,7 @@ public class Nation_Table_Create extends BasicTPCHFiller{
 		}
 		commit(transaction);
 		transaction = beginTransaction();
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction, ImmutableSet.of("n_nationkey", "n_name", "n_regionkey", "n_comment"));
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;

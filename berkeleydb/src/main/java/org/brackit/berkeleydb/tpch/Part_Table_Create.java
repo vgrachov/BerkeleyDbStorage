@@ -50,6 +50,8 @@ import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.Assert;
 
+import com.google.common.collect.ImmutableSet;
+
 public class Part_Table_Create extends BasicTPCHFiller{
 
 	private static final String tableName = "part";
@@ -91,7 +93,6 @@ public class Part_Table_Create extends BasicTPCHFiller{
 		ITransaction transaction = beginTransaction();
 		
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create(tableName);
-		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
 		BufferedReader lineItemInput = null;
 		try {
 			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"part.tbl"));
@@ -123,7 +124,8 @@ public class Part_Table_Create extends BasicTPCHFiller{
 		}
 		commit(transaction);
 		transaction = beginTransaction();
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction,
+				ImmutableSet.of("p_partkey", "p_name", "p_mfgr", "p_brand", "p_type", "p_size", "p_container", "p_retailprice", "p_comment"));
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;

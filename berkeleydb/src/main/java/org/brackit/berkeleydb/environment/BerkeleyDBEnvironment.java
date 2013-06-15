@@ -224,6 +224,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 		secondaryConfig.setAllowPopulate(!allowCreate);
 		secondaryConfig.setSortedDuplicates(true);
 		secondaryConfig.setType(DatabaseType.BTREE);
+		secondaryConfig.setPageSize(32768);
 		return secondaryConfig; 
 	}
 	

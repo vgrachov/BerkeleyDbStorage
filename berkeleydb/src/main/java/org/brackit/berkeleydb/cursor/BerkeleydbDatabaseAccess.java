@@ -27,12 +27,15 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.transaction.BerkeleydbTransaction;
 import org.brackit.relational.api.IDatabaseAccess;
+import org.brackit.relational.api.cursor.Condition;
 import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.api.transaction.ITransaction;
 import org.brackit.relational.metadata.Schema;
@@ -40,12 +43,17 @@ import org.brackit.relational.metadata.tuple.AtomicValue;
 import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
+import com.google.common.base.Preconditions;
 import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.OperationStatus;
 
+/**
+ * Main interface for accessing BerkeleyDB data.
+ * 
+ */
 public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 
 	private static final Logger logger = Logger.getLogger(BerkeleydbDatabaseAccess.class);
@@ -85,7 +93,8 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 			if (transaction == null)
 				status = dataBase.put(null, new DatabaseEntry(serializedKey.toByteArray()), new DatabaseEntry(serializedTupleValues.toByteArray()));
 			else
-				status = dataBase.put(((BerkeleydbTransaction)transaction).getTransaction(), new DatabaseEntry(serializedKey.toByteArray()), new DatabaseEntry(serializedTupleValues.toByteArray()));
+				status = dataBase.put(((BerkeleydbTransaction)transaction).getTransaction(), new DatabaseEntry(serializedKey.toByteArray()), 
+						new DatabaseEntry(serializedTupleValues.toByteArray()));
 			if (status != OperationStatus.SUCCESS)
 				logger.debug(status);
 		} catch (DatabaseException e) {
@@ -101,7 +110,6 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		boolean validation = validation(transaction);
 		if (!validation)
 			return false;
-
 		TupleOutput serializedTupleValue = new TupleOutput();
 		TupleOutput serializedKey = new TupleOutput();
 		tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValue);
@@ -117,24 +125,39 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 				return false;
 		} catch (DatabaseException e) {
 			logger.error(e.getMessage());
+			//TODO: exception handling
 		}
 		return false;
 	}
 
-
-	public ITupleCursor getFullScanCursor(ITransaction transaction) {
+	public ITupleCursor getFullScanCursor(ITransaction transaction, Set<String> projectionFields) {
+		Preconditions.checkNotNull(projectionFields);
 		boolean validation = validation(transaction);
 		if (!validation)
 			return null;
 		FullTableScanCursor fullTableScanCursor = null;
 		if (transaction == null)
-			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),null);
+			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),null, projectionFields);
 		else
-			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),((BerkeleydbTransaction)transaction).getTransaction());
+			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
 		return fullTableScanCursor;
 	}
 
-	public ITupleCursor getRangeIndexScanCursor(Column column, AtomicValue leftKey, AtomicValue rightKey,ITransaction transaction) {
+	public ITupleCursor getFullScanCursor(ITransaction transaction, Condition condition, Set<String> projectionFields) {
+		Preconditions.checkNotNull(projectionFields);
+		boolean validation = validation(transaction);
+		if (!validation)
+			return null;
+		FullTableScanCursor fullTableScanCursor = null;
+		if (transaction == null)
+			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),null, condition, projectionFields);
+		else
+			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),((BerkeleydbTransaction)transaction).getTransaction(), condition, projectionFields);
+		return fullTableScanCursor;
+	}
+	
+	public ITupleCursor getRangeIndexScanCursor(Column column, AtomicValue leftKey, AtomicValue rightKey,ITransaction transaction, Set<String> projectionFields) {
+		Preconditions.checkNotNull(projectionFields);
 		boolean validation = validation(transaction);//TODO: check whether index exists
 		if (!validation)
 			return null;
@@ -142,33 +165,33 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		if (transaction == null)
 			rangeIndexSearchCursor = new RangeIndexSearchCursor(column,leftKey,rightKey,null);
 		else
-			rangeIndexSearchCursor = new RangeIndexSearchCursor(column,leftKey,rightKey,((BerkeleydbTransaction)transaction).getTransaction());
+			rangeIndexSearchCursor = new RangeIndexSearchCursor(column,leftKey,rightKey,((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
 		return rangeIndexSearchCursor;
 	}
 
-	public ITupleCursor getFullIndexCursor(Column column, ITransaction transaction) {
+	public ITupleCursor getFullIndexCursor(Column column, ITransaction transaction, Set<String> projectionFields) {
+		Preconditions.checkNotNull(projectionFields);
 		boolean validation = validation(transaction);//TODO: check whether index exists
 		if (!validation)
 			return null;
 		FullIndexCursor fullIndexCursor = null;
 		if (transaction == null)
-			fullIndexCursor = new FullIndexCursor(column,null);
+			fullIndexCursor = new FullIndexCursor(column,null,projectionFields);
 		else
-			fullIndexCursor = new FullIndexCursor(column,((BerkeleydbTransaction)transaction).getTransaction());
+			fullIndexCursor = new FullIndexCursor(column,((BerkeleydbTransaction)transaction).getTransaction(),projectionFields);
 		return fullIndexCursor;
 	}
 
-	public ITupleCursor getEqualMatchIndexSearchCursor(Column column, AtomicValue value, ITransaction transaction) {
+	public ITupleCursor getEqualMatchIndexSearchCursor(Column column, AtomicValue value, ITransaction transaction, Set<String> projectionFields) {
+		Preconditions.checkNotNull(projectionFields);
 		boolean validation = validation(transaction);//TODO: check whether index exists
 		if (!validation)
 			return null;
 		EqualMatchIndexSearchCursor equalMatchIndexSearchCursor = null;
 		if (transaction == null)
-			equalMatchIndexSearchCursor = new EqualMatchIndexSearchCursor(schema.getDatabaseName(), column, value, null);
+			equalMatchIndexSearchCursor = new EqualMatchIndexSearchCursor(schema.getDatabaseName(), column, value, null, projectionFields);
 		else
-			equalMatchIndexSearchCursor = new EqualMatchIndexSearchCursor(schema.getDatabaseName(), column, value,((BerkeleydbTransaction)transaction).getTransaction());
+			equalMatchIndexSearchCursor = new EqualMatchIndexSearchCursor(schema.getDatabaseName(), column, value,((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
 		return equalMatchIndexSearchCursor;
 	}
-
-	
 }

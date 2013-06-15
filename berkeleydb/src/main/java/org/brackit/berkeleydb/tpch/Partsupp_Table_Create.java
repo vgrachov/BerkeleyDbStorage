@@ -42,13 +42,14 @@ import org.brackit.relational.api.transaction.TransactionException;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicDouble;
 import org.brackit.relational.metadata.tuple.AtomicInteger;
-import org.brackit.relational.metadata.tuple.AtomicString;
 import org.brackit.relational.metadata.tuple.AtomicValue;
 import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.Assert;
+
+import com.google.common.collect.ImmutableSet;
 
 public class Partsupp_Table_Create extends BasicTPCHFiller {
 
@@ -62,7 +63,7 @@ public class Partsupp_Table_Create extends BasicTPCHFiller {
 				new Column(tableName,"ps_suppkey", ColumnType.Integer,true,true),
 				new Column(tableName,"ps_availqty", ColumnType.Integer,false,false),
 				new Column(tableName,"ps_supplycost", ColumnType.Double,false,false),
-				new Column(tableName,"ps_comment", ColumnType.String,false,false)
+				//new Column(tableName,"ps_comment", ColumnType.String,false,false)
 		}, tableName);
 		try {
 			catalog.createDatabase(schema);
@@ -75,7 +76,7 @@ public class Partsupp_Table_Create extends BasicTPCHFiller {
 			logger.debug("Print column "+checkSchema.getColumns()[i]);
 		}
 		Assert.assertEquals(checkSchema.getDatabaseName(), tableName);
-		Assert.assertEquals(checkSchema.getColumns().length, 5);
+		Assert.assertEquals(checkSchema.getColumns().length, 4);
 		Assert.assertEquals(checkSchema.getColumns()[0].getColumnName(), "PS_PARTKEY".toLowerCase());
 		Assert.assertEquals(checkSchema.getColumns()[1].getColumnName(), "PS_SUPPKEY".toLowerCase());
 		Assert.assertEquals(checkSchema.getColumns()[1].isDirectIndexExist(), true);
@@ -87,7 +88,6 @@ public class Partsupp_Table_Create extends BasicTPCHFiller {
 		ITransaction transaction = beginTransaction();
 		
 		IDatabaseAccess databaseAccess = DatabaseAccessFactory.getInstance().create(tableName);
-		//BufferedReader lineItemInput = new BufferedReader( new InputStreamReader( this.getClass().getClassLoader().getResourceAsStream("tpc-h/100KB_data/lineitem.tbl")));
 		BufferedReader lineItemInput = null;
 		try {
 			lineItemInput = new BufferedReader( new FileReader(RelationalStorageProperties.getTBLPath()+"partsupp.tbl"));
@@ -102,12 +102,12 @@ public class Partsupp_Table_Create extends BasicTPCHFiller {
 					logger.debug(readLines);
 				readLines++;
 				String[] entries = line.split("\\|");
-				AtomicValue[] fields = new AtomicValue[5];
+				AtomicValue[] fields = new AtomicValue[4];
 				fields[0] = new AtomicInteger("ps_partkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicInteger("ps_suppkey", Integer.valueOf(entries[1]));
 				fields[2] = new AtomicInteger("ps_availqty", Integer.valueOf(entries[2]));
 				fields[3] = new AtomicDouble("ps_supplycost", Double.valueOf(entries[3]));
-				fields[4] = new AtomicString("ps_comment", entries[4]);
+				//fields[4] = new AtomicString("ps_comment", entries[4]);
 				Tuple tuple = new Tuple(fields);
 				databaseAccess.insert(tuple,transaction);
 			}
@@ -117,7 +117,8 @@ public class Partsupp_Table_Create extends BasicTPCHFiller {
 		}
 		commit(transaction);
 		transaction = beginTransaction();
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction,
+				ImmutableSet.of("ps_partkey", "ps_suppkey", "ps_availqty", "ps_supplycost"));
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;

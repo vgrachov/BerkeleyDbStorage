@@ -32,6 +32,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
@@ -77,8 +79,8 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 				new Column("lineitem", "l_commitdate", ColumnType.Date, false, false),
 				new Column("lineitem", "l_receiptdate", ColumnType.Date, false, true),
 				new Column("lineitem", "l_shipinstruct", ColumnType.String, false, false),
-				new Column("lineitem", "l_shipmode", ColumnType.String, false, true)//,
-				//new Column("lineitem", "l_comment", ColumnType.String, false, false)
+				new Column("lineitem", "l_shipmode", ColumnType.String, false, true),
+				new Column("lineitem", "l_comment", ColumnType.String, false, false)
 				
 		};
 		Schema schema = new Schema(columns, "lineitem");
@@ -111,8 +113,8 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 					logger.debug(i);
 				i++;
 				String[] entries = line.split("\\|");
-				//AtomicValue[] fields = new AtomicValue[16];
-				AtomicValue[] fields = new AtomicValue[15];
+				AtomicValue[] fields = new AtomicValue[16];
+				//AtomicValue[] fields = new AtomicValue[15];
 				//Atomic[] fields = new Atomic[4];
 				fields[0] = new AtomicInteger("l_orderkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicInteger("l_partkey", Integer.valueOf(entries[1]));
@@ -140,7 +142,7 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 
 				fields[13] = new AtomicString("l_shipinstruct", entries[13]);
 				fields[14] = new AtomicString("l_shipmode", entries[14]);
-				//fields[15] = new AtomicString("l_comment", entries[15]);
+				fields[15] = new AtomicString("l_comment", entries[15]);
 				Tuple tuple = new Tuple(fields);
 				databaseAccess.insert(tuple,transaction);
 			}
@@ -153,7 +155,15 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 		} catch (TransactionException e) {
 			logger.fatal(e.getMessage());
 		}
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create("lineitem").getFullScanCursor(transaction);
+		Set<String> fields = new HashSet<String>();
+		fields.add("l_returnflag");
+		fields.add("l_linestatus");
+		fields.add("l_quantity");
+		fields.add("l_extendedprice");
+		fields.add("l_discount");
+		fields.add("l_shipdate");
+		fields.add("l_tax");
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create("lineitem").getFullScanCursor(transaction, fields);
 				
 		cursor.open();
 		int counter = 0;

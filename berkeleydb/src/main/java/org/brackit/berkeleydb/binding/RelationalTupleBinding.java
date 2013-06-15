@@ -27,7 +27,7 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.binding;
 
-import java.util.Date;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.brackit.relational.metadata.tuple.AtomicChar;
@@ -40,11 +40,11 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
+import com.google.common.base.Preconditions;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
-public class RelationalTupleBinding extends TupleBinding<Tuple> {
+public class RelationalTupleBinding {
 
 	private static final Logger logger = Logger.getLogger(RelationalTupleBinding.class);
 	
@@ -55,8 +55,10 @@ public class RelationalTupleBinding extends TupleBinding<Tuple> {
 		this.schema = schema.clone();
 	}
 
-	public Tuple smartEntryToObject(TupleInput key, TupleInput input){
-		AtomicValue[] fields = new AtomicValue[schema.length];
+	public Tuple smartEntryToObject(TupleInput key, TupleInput input, Set<String> projectionFields){
+		Preconditions.checkNotNull(projectionFields);
+		AtomicValue[] fields = new AtomicValue[projectionFields.size()];
+		int columnIndex = 0;
 		for (int i=0;i<schema.length;i++){
 			
 			TupleInput target = null;
@@ -64,41 +66,38 @@ public class RelationalTupleBinding extends TupleBinding<Tuple> {
 				target = key;
 			else
 				target = input;
-			
+
 			Column currentColumn = schema[i];
-			if (currentColumn.getType()==ColumnType.String)
-				fields[i] = new AtomicString(currentColumn.getColumnName(), target.readString());
-			else
-			if (currentColumn.getType()==ColumnType.Integer)
-				fields[i] = new AtomicInteger(currentColumn.getColumnName(), target.readInt());
-			else
-			if (currentColumn.getType()==ColumnType.Double)
-				fields[i] = new AtomicDouble(currentColumn.getColumnName(), target.readDouble());
-			else
-			if (currentColumn.getType()==ColumnType.Char)
-				fields[i] = new AtomicChar(currentColumn.getColumnName(), target.readChar());
-			else
-			if (currentColumn.getType()==ColumnType.Date)
-				fields[i] = new AtomicDate(currentColumn.getColumnName(), target.readLong());
-			else
+			if (currentColumn.getType()==ColumnType.String) {
+				String data = target.readString();
+				if (projectionFields.contains(currentColumn.getColumnName()))
+					fields[columnIndex++] = new AtomicString(currentColumn.getColumnName(), data);
+			} else
+			if (currentColumn.getType()==ColumnType.Integer) {
+				int data = target.readInt();
+				if (projectionFields.contains(currentColumn.getColumnName()))
+					fields[columnIndex++] = new AtomicInteger(currentColumn.getColumnName(), data);
+			} else
+			if (currentColumn.getType()==ColumnType.Double) {
+				double data = target.readDouble();
+				if (projectionFields.contains(currentColumn.getColumnName()))
+					fields[columnIndex++] = new AtomicDouble(currentColumn.getColumnName(), data);
+			} else
+			if (currentColumn.getType()==ColumnType.Char) {
+				char data = target.readChar();
+				if (projectionFields.contains(currentColumn.getColumnName()))
+					fields[columnIndex++] = new AtomicChar(currentColumn.getColumnName(), data);
+			} else
+			if (currentColumn.getType()==ColumnType.Date) {
+				long data = target.readLong();
+				if (projectionFields.contains(currentColumn.getColumnName()))
+					fields[columnIndex++] = new AtomicDate(currentColumn.getColumnName(), data);
+			} else
 				throw new IllegalArgumentException("Type is not supported");
 		}
-		return new Tuple(fields);
-		
+		return new Tuple(fields);	
 	}
 	
-	@Override
-	@Deprecated
-	public Tuple entryToObject(TupleInput input) {
-		throw new IllegalAccessError();
-	}
-
-	@Override
-	@Deprecated
-	public void objectToEntry(Tuple tuple, TupleOutput output) {
-		throw new IllegalAccessError();
-	}
-
 	public void smartObjectToEntry(Tuple tuple, TupleOutput key, TupleOutput output){
 		AtomicValue[] fields = tuple.getFields();
 		for (int i=0;i<schema.length;i++){

@@ -27,6 +27,8 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
@@ -77,12 +79,13 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 	private final AtomicValue leftKey;
 	private final EntryBinding binding;
 	private final Transaction transaction;
+	private Set<String> projectionFields;
 	
-	RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey){
-		this(column,leftKey,rightKey,null);
+	RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, Set<String> projectionFields){
+		this(column,leftKey,rightKey,null,projectionFields);
 	}
 	
-	RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, Transaction transaction){
+	RangeIndexSearchCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, Transaction transaction, Set<String> projectionFields){
 		logger.debug("Create range search cursor for table "+column.getDatabaseName()+" and column"+column.getColumnName());
 		logger.debug("Left range "+leftKey);
 		logger.debug("Right range "+rightKey);
@@ -97,6 +100,7 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		this.tupleBinding = new RelationalTupleBinding(schema.getColumns());
 		this.transaction = transaction;
+		this.projectionFields = projectionFields;
 	}
 	
 	public void open() {
@@ -162,7 +166,7 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 					return null;
 				TupleInput foundKeySerialized = new TupleInput(currentPrimaryKey.getData());
 				TupleInput foundDataSerialized = new TupleInput(currentPrimaryValue.getData());
-				Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized, projectionFields);
 				return tuple;
 			}else
 				return null;
@@ -177,7 +181,7 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 			if (retVal == OperationStatus.SUCCESS){
 				TupleInput foundKeySerialized = new TupleInput(currentPrimaryKey.getData());
 				TupleInput foundDataSerialized = new TupleInput(currentPrimaryValue.getData());
-				Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized, projectionFields);
 				return tuple;
 			}else{
 				try {
@@ -193,7 +197,7 @@ public class RangeIndexSearchCursor implements ITupleCursor {
 					return null;
 				TupleInput foundKeySerialized = new TupleInput(currentPrimaryKey.getData());
 				TupleInput foundDataSerialized = new TupleInput(currentPrimaryValue.getData());
-				Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+				Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized, projectionFields);
 				return tuple;
 			}
 		}

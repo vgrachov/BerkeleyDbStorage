@@ -40,6 +40,4 @@ public abstract class AtomicValue{
 	}*/
 	
 	public abstract Object getData();
-	
-	
 }

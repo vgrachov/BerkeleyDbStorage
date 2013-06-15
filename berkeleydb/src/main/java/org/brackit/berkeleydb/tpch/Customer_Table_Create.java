@@ -51,6 +51,8 @@ import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.Assert;
 
+import com.google.common.collect.ImmutableSet;
+
 public class Customer_Table_Create extends BasicTPCHFiller {
 	
 	private static final Logger logger = Logger.getLogger(Customer_Table_Create.class);
@@ -125,7 +127,7 @@ public class Customer_Table_Create extends BasicTPCHFiller {
 		}
 		commit(transaction);
 		transaction = beginTransaction();
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction, ImmutableSet.of("c_custkey", "c_name", "c_address"));
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;

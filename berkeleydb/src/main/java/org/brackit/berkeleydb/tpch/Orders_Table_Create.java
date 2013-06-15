@@ -53,6 +53,8 @@ import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.Assert;
 
+import com.google.common.collect.ImmutableSet;
+
 public class Orders_Table_Create extends BasicTPCHFiller{
 
 	private static final String tableName = "orders";
@@ -116,8 +118,6 @@ public class Orders_Table_Create extends BasicTPCHFiller{
 					logger.error(e.getMessage());
 					Assert.fail(e.getMessage());
 				}
-
-				//fields[4] = new AtomicString("o_orderdate", entries[4]);
 				fields[5] = new AtomicString("o_orderpriority", entries[5]);
 				fields[6] = new AtomicString("o_clerk", entries[6]);
 				fields[7] = new AtomicInteger("o_shippriority", Integer.valueOf(entries[7]));
@@ -133,7 +133,8 @@ public class Orders_Table_Create extends BasicTPCHFiller{
 		commit(transaction);
 		transaction = beginTransaction();
 		
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction, 
+				ImmutableSet.of("o_orderkey", "o_custkey", "o_orderstatus", "o_totalprice", "o_orderdate", "o_orderpriority", "o_clerk", "o_shippriority", "o_comment"));
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;

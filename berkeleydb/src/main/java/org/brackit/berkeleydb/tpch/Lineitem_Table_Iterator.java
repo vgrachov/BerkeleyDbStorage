@@ -51,24 +51,42 @@ import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableSet;
+
 public class Lineitem_Table_Iterator{
 
 	private static final Logger logger = Logger.getLogger(Lineitem_Table_Iterator.class);
 	private static String tableName = "lineitem"; 
 	
+	/*@Test
+	public void arrayTest() {
+		long startTime = System.currentTimeMillis();
+		for (int i=0;i<100000000;i++) {
+			String[] array = new String[10];
+			for (int j=0;j<array.length;j++)
+				array[j] = String.valueOf(i+j);
+		}
+		logger.info(System.currentTimeMillis() - startTime);
+	}*/
+	
 	@Test
 	public void fullIterator() throws TransactionException{
 		logger.debug("Full scan");
 		ITransaction transaction = beginTransaction();
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction,
+				ImmutableSet.of("l_shipdate"));
 		long start = System.currentTimeMillis();
 		cursor.open();
 		Tuple tuple = null;
 		int i=0;
 		List<Tuple> tuples = new LinkedList<Tuple>();
 		while ((tuple = cursor.next())!=null){
-			if (i%100000==0)
+			logger.debug(tuple);
+			if (i%100000==0) {
 				logger.debug(i);
+				//logger.debug(tuple.getFields()[15]);
+			}
+		
 			//tuples.add(tuple);
 			i++;
 			//logger.debug(tuple);
@@ -79,7 +97,7 @@ public class Lineitem_Table_Iterator{
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
 	}
 
-	@Test
+	/*@Test
 	public void fullIterator1() throws TransactionException{
 		logger.debug("Full scan");
 		ITransaction transaction = beginTransaction();
@@ -96,9 +114,9 @@ public class Lineitem_Table_Iterator{
 		cursor.close();
 		commit(transaction);
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
-	}
+	}*/
 	
-	@Test
+	/*@Test
 	public void fullIndexIterator() throws TransactionException, IOException {
 		logger.debug("Full index scan");
 		ITransaction transaction = beginTransaction();
@@ -116,9 +134,9 @@ public class Lineitem_Table_Iterator{
 		cursor.close();
 		commit(transaction);
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
-	}
+	}*/
 
-	@Test
+	/*@Test
 	public void rangeSearch() throws TransactionException{
 		logger.debug("Range index scan");
 		ITransaction transaction = beginTransaction();
@@ -140,31 +158,31 @@ public class Lineitem_Table_Iterator{
 		cursor.close();
 		commit(transaction);
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
-	}
+	}*/
 
 
-	@Test
+	/*@Test
 	public void rangeIteratorShipdate() throws TransactionException, ParseException {
 		logger.debug("Range index scan");
 		ITransaction transaction = beginTransaction();
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(tableName);
 		SimpleDateFormat dateFormat = new SimpleDateFormat(RelationalStorageProperties.getDatePattern());
-		AtomicDate rightRange = new AtomicDate("l_shipdate", dateFormat.parse("1994-06-27").getTime());
-		AtomicDate leftRange = new AtomicDate("l_shipdate", dateFormat.parse("1993-06-27").getTime());
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getRangeIndexScanCursor(schema.getColumns()[10], leftRange, rightRange, transaction);
+		AtomicDate rightRange = new AtomicDate("l_shipdate", dateFormat.parse("1999-06-27").getTime());
+		AtomicDate leftRange = new AtomicDate("l_shipdate", dateFormat.parse("1992-06-27").getTime());
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getRangeIndexScanCursor(schema.getColumns()[10], leftRange, rightRange, transaction, ImmutableSet.of("l_shipdate"));
 		long start = System.currentTimeMillis();
 		cursor.open();
 		Tuple tuple = null;
 		int i=0;
 		while ((tuple = cursor.next())!=null){
-			if (i%10000==0)
+			if (i%100000==0)
 				logger.debug(i);
 			i++;
 		}
 		cursor.close();
 		commit(transaction);
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
-	}
+	}*/
 	
 	
 	@AfterClass

@@ -25,35 +25,36 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.relational.api;
+package org.brackit.relational.api.cursor;
 
-
-import java.util.Set;
-
-import org.brackit.relational.api.cursor.Condition;
-import org.brackit.relational.api.cursor.ITupleCursor;
-import org.brackit.relational.api.transaction.ITransaction;
 import org.brackit.relational.metadata.tuple.AtomicValue;
 import org.brackit.relational.metadata.tuple.Column;
-import org.brackit.relational.metadata.tuple.Tuple;
 
-public interface IDatabaseAccess {
+public class Condition {
 
-	boolean insert(Tuple tuple, ITransaction transaction);
+	public enum Sign {
+		EQ,LESS,LESS_EQ,MORE,MORE_EQ;
+	}
 	
-	//TODO: implement
-	//boolean update(DatabaseEntry key, DatabaseEntry value);
+	private final Column column;
+	private final AtomicValue value;
+	private final Sign sign;
 	
-	boolean delete(Tuple tuple, ITransaction transaction);
+	public Condition(Column column, AtomicValue value, Sign sign) {
+		this.column = column;
+		this.value = value;
+		this.sign = sign;
+	}
 	
-	ITupleCursor getFullScanCursor(ITransaction transaction, Set<String> projectionFields);
-
-	ITupleCursor getFullScanCursor(ITransaction transaction, Condition condition, Set<String> projectionFields);
+	public Column getColumn() {
+		return column;
+	}
 	
-	ITupleCursor getFullIndexCursor(Column column, ITransaction transaction, Set<String> projectionFields);
+	public AtomicValue getValue() {
+		return value;
+	}
 	
-	ITupleCursor getRangeIndexScanCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, ITransaction transaction, Set<String> projectionFields);
-	
-	ITupleCursor getEqualMatchIndexSearchCursor(Column column, AtomicValue value, ITransaction transaction, Set<String> projectionFields);
-	
+	public Sign getSign() {
+		return sign;
+	}
 }

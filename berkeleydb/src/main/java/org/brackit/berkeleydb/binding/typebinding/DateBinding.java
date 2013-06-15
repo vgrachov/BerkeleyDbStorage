@@ -43,5 +43,4 @@ public class DateBinding extends TupleBinding<Long> {
 	public void objectToEntry(Long date, TupleOutput output) {
 		output.writeLong(date);
 	}
-
 }

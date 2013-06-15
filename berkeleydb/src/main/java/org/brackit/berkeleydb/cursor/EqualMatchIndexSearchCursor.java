@@ -27,6 +27,8 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
@@ -68,12 +70,14 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 	private String databaseName;
 	private OperationStatus retVal;
 	private final Transaction transaction;
+	private final Set<String> projectionFields;
 
-	EqualMatchIndexSearchCursor(String databaseName, Column column, AtomicValue value, Transaction transaction){
+	EqualMatchIndexSearchCursor(String databaseName, Column column, AtomicValue value, Transaction transaction, Set<String> projectionFields){
 		this.databaseName = databaseName;
 		this.column = column;
 		this.searchValue = value;
 		this.transaction = transaction;
+		this.projectionFields = projectionFields;
 	}
 	
 	public void open() {
@@ -113,7 +117,7 @@ public class EqualMatchIndexSearchCursor implements ITupleCursor {
 		if (retVal == OperationStatus.SUCCESS){
 			TupleInput foundKeySerialized = new TupleInput(foundKeyEntry.getData());
 			TupleInput foundDataSerialized = new TupleInput(foundDataEntry.getData());
-			Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
+			Tuple tuple = tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized, projectionFields);
 			try {
 				retVal = cursor.getNextDup(searchKeyEntry, foundKeyEntry, foundDataEntry, LockMode.DEFAULT);
 			} catch (DatabaseException e) {

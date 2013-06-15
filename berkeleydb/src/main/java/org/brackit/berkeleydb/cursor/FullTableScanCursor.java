@@ -27,9 +27,13 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.cursor;
 
+import java.util.Set;
+
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
+import org.brackit.relational.api.cursor.Condition;
 import org.brackit.relational.api.cursor.ITupleCursor;
+import org.brackit.relational.metadata.tuple.AtomicValue;
 import org.brackit.relational.metadata.tuple.Tuple;
 
 import com.sleepycat.bind.tuple.TupleBinding;
@@ -54,16 +58,36 @@ public class FullTableScanCursor extends BerkeleydbDatabaseAccess implements ITu
 	
 	private final Transaction transaction;
 	
-	public FullTableScanCursor(String databaseName, Transaction transaction){
+	private final Condition condition;
+	
+	private int conditionPosition;
+	
+	private final Set<String> projectionFields;
+	
+	public FullTableScanCursor(String databaseName, Transaction transaction, Set<String> projectionFields){
+		this(databaseName, transaction, null, projectionFields);
+		/*super(databaseName);
+		this.databaseName = databaseName;
+		tupleBinding = new RelationalTupleBinding(schema.getColumns());
+		this.transaction = transaction;
+		this.condition = null;*/
+	}
+
+	public FullTableScanCursor(String databaseName, Transaction transaction, Condition condition, Set<String> projectionFields){
 		super(databaseName);
 		this.databaseName = databaseName;
 		tupleBinding = new RelationalTupleBinding(schema.getColumns());
 		this.transaction = transaction;
+		this.condition = condition;
+		this.projectionFields = projectionFields;
 	}
-	
+
 	public void open() {
 		try {
-			logger.debug("Open cursor for database "+databaseName);
+			/*for (int i=0; i < schema.getColumns().length; i++)
+				if (condition.getColumn().equals(schema.getColumns()[i]))
+					conditionPosition = i;
+			conditionPosition = -1;*/
 			cursor = dataBase.openCursor(transaction, CursorConfig.DEFAULT);
 		} catch (DatabaseException e) {
 			// TODO Auto-generated catch block
@@ -76,19 +100,39 @@ public class FullTableScanCursor extends BerkeleydbDatabaseAccess implements ITu
 		DatabaseEntry elementKey = new DatabaseEntry();
 		DatabaseEntry elementData = new DatabaseEntry();
 		OperationStatus status = null;
-		try {
-			status = cursor.getNext(elementKey, elementData, LockMode.DEFAULT);
-		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if (status == OperationStatus.SUCCESS){
-			Tuple tuple = tupleBinding.smartEntryToObject(new TupleInput(elementKey.getData()), new TupleInput(elementData.getData()));
-			return tuple;
-		}
+		//while (true) {
+			try {
+				status = cursor.getNext(elementKey, elementData, LockMode.DEFAULT);
+			} catch (DatabaseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (status == OperationStatus.SUCCESS) {
+				Tuple tuple = tupleBinding.smartEntryToObject(new TupleInput(elementKey.getData()), new TupleInput(elementData.getData()), projectionFields);
+				return tuple;
+/*				if (condition == null)
+					return tuple;
+				else {
+					AtomicValue currentValue = tuple.getFields()[conditionPosition];
+					if (isConditionFulfilled(currentValue))
+						return tuple;
+				}*/
+			}// else
+			//	break;
+		//}
 		return null;
 	}
 
+	private boolean isConditionFulfilled(AtomicValue value) {
+		if (condition == null)
+			throw new IllegalArgumentException("Condition can't be null");
+		if (value == null)
+			throw new IllegalArgumentException("Value can't be null");
+		value.getData();
+		return true;
+		//if (condition.getSign() == Condition.Sign.)
+	}
+	
 	public void close() {
 		try {
 			cursor.close();
