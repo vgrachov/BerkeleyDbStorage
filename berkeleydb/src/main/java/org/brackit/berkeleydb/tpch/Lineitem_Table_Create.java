@@ -32,8 +32,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
@@ -55,6 +53,8 @@ import org.brackit.relational.metadata.tuple.ColumnType;
 import org.brackit.relational.metadata.tuple.Tuple;
 import org.brackit.relational.properties.RelationalStorageProperties;
 import org.junit.Assert;
+
+import com.google.common.collect.ImmutableSet;
 
 public class Lineitem_Table_Create extends BasicTPCHFiller {
 
@@ -106,6 +106,7 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 		String line = null;
 		ITransaction transaction = beginTransaction();
 		SimpleDateFormat dateFormat = new SimpleDateFormat(RelationalStorageProperties.getDatePattern());
+		long start = System.currentTimeMillis();
 		try {
 			int i=0;
 			while ((line=lineItemInput.readLine())!=null){
@@ -114,8 +115,6 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 				i++;
 				String[] entries = line.split("\\|");
 				AtomicValue[] fields = new AtomicValue[16];
-				//AtomicValue[] fields = new AtomicValue[15];
-				//Atomic[] fields = new Atomic[4];
 				fields[0] = new AtomicInteger("l_orderkey", Integer.valueOf(entries[0]));
 				fields[1] = new AtomicInteger("l_partkey", Integer.valueOf(entries[1]));
 				fields[2] = new AtomicInteger("l_suppkey", Integer.valueOf(entries[2]));
@@ -128,18 +127,11 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 				fields[9] = new AtomicChar("l_linestatus", entries[9].charAt(0));
 				try{
 					fields[10] = new AtomicDate("l_shipdate", dateFormat.parse(entries[10]).getTime());
-//					l_shipdates.add(dateFormat.parse(entries[10]));
 					fields[11] = new AtomicDate("l_commitdate", dateFormat.parse(entries[11]).getTime());
 					fields[12] = new AtomicDate("l_receiptdate", dateFormat.parse(entries[12]).getTime());
 				}catch (Exception e) {
 					logger.error(e.getMessage());
 				}
-
-				/*fields[10] = new AtomicString("l_shipdate", entries[10]);
-				
-				fields[11] = new AtomicString("l_commitdate", entries[11]);
-				fields[12] = new AtomicString("l_receiptdate", entries[12]);*/
-
 				fields[13] = new AtomicString("l_shipinstruct", entries[13]);
 				fields[14] = new AtomicString("l_shipmode", entries[14]);
 				fields[15] = new AtomicString("l_comment", entries[15]);
@@ -155,16 +147,10 @@ public class Lineitem_Table_Create extends BasicTPCHFiller {
 		} catch (TransactionException e) {
 			logger.fatal(e.getMessage());
 		}
-		Set<String> fields = new HashSet<String>();
-		fields.add("l_returnflag");
-		fields.add("l_linestatus");
-		fields.add("l_quantity");
-		fields.add("l_extendedprice");
-		fields.add("l_discount");
-		fields.add("l_shipdate");
-		fields.add("l_tax");
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create("lineitem").getFullScanCursor(transaction, fields);
-				
+		System.out.println("Insert time "+(System.currentTimeMillis() - start));
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create("lineitem").getFullScanCursor(transaction, 
+				ImmutableSet.of("l_orderkey", "l_partkey", "l_suppkey", "l_linenumber", "l_quantity", "l_extendedprice", "l_discount", "l_tax", 
+						"l_returnflag", "l_linestatus", "l_shipdate", "l_commitdate", "l_receiptdate", "l_shipinstruct", "l_shipmode", "l_comment"));
 		cursor.open();
 		int counter = 0;
 		Tuple tuple = null;

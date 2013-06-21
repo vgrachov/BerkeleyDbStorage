@@ -31,13 +31,11 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.RelationalTupleBinding;
+import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.relational.api.cursor.Condition;
-import org.brackit.relational.api.cursor.ITupleCursor;
-import org.brackit.relational.metadata.tuple.AtomicValue;
+import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.Tuple;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.db.Cursor;
 import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.DatabaseEntry;
@@ -46,100 +44,68 @@ import com.sleepycat.db.LockMode;
 import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.Transaction;
 
-public class FullTableScanCursor extends BerkeleydbDatabaseAccess implements ITupleCursor {
+public class FullTableScanCursor extends AbstractCursor {
 
-	private static final Logger logger = Logger.getLogger(FullTableScanCursor.class);
-	
+	private static final Logger logger = Logger
+			.getLogger(FullTableScanCursor.class);
+
 	private Cursor cursor;
-	
-	private final RelationalTupleBinding tupleBinding;
-	
-	private final String databaseName;
-	
-	private final Transaction transaction;
-	
+
 	private final Condition condition;
-	
-	private int conditionPosition;
-	
-	private final Set<String> projectionFields;
-	
-	public FullTableScanCursor(String databaseName, Transaction transaction, Set<String> projectionFields){
-		this(databaseName, transaction, null, projectionFields);
-		/*super(databaseName);
-		this.databaseName = databaseName;
-		tupleBinding = new RelationalTupleBinding(schema.getColumns());
-		this.transaction = transaction;
-		this.condition = null;*/
+
+	private static int size = 0;
+	private static int projSize = 0;
+
+	public FullTableScanCursor(Schema schema, Transaction transaction,
+			Set<String> projectionFields) {
+		this(schema, transaction, null, projectionFields);
 	}
 
-	public FullTableScanCursor(String databaseName, Transaction transaction, Condition condition, Set<String> projectionFields){
-		super(databaseName);
-		this.databaseName = databaseName;
-		tupleBinding = new RelationalTupleBinding(schema.getColumns());
-		this.transaction = transaction;
+	public FullTableScanCursor(Schema schema, Transaction transaction, Condition condition, Set<String> projectionFields) {
+		super(schema, projectionFields, transaction);
 		this.condition = condition;
-		this.projectionFields = projectionFields;
 	}
 
 	public void open() {
 		try {
-			/*for (int i=0; i < schema.getColumns().length; i++)
-				if (condition.getColumn().equals(schema.getColumns()[i]))
-					conditionPosition = i;
-			conditionPosition = -1;*/
-			cursor = dataBase.openCursor(transaction, CursorConfig.DEFAULT);
+			cursor = BerkeleyDBEnvironment.getInstance()
+					.getDatabasereference(schema.getDatabaseName())
+					.openCursor(transaction, CursorConfig.DEFAULT);
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.info(e.getMessage());
+			throw new RuntimeException(e);
 		}
-		
 	}
 
 	public Tuple next() {
 		DatabaseEntry elementKey = new DatabaseEntry();
 		DatabaseEntry elementData = new DatabaseEntry();
 		OperationStatus status = null;
-		//while (true) {
-			try {
-				status = cursor.getNext(elementKey, elementData, LockMode.DEFAULT);
-			} catch (DatabaseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if (status == OperationStatus.SUCCESS) {
-				Tuple tuple = tupleBinding.smartEntryToObject(new TupleInput(elementKey.getData()), new TupleInput(elementData.getData()), projectionFields);
-				return tuple;
-/*				if (condition == null)
-					return tuple;
-				else {
-					AtomicValue currentValue = tuple.getFields()[conditionPosition];
-					if (isConditionFulfilled(currentValue))
-						return tuple;
-				}*/
-			}// else
-			//	break;
-		//}
+		try {
+			status = cursor.getNext(elementKey, elementData, LockMode.DEFAULT);
+			size += elementKey.getSize();
+			size += elementData.getSize();
+		} catch (DatabaseException e) {
+			logger.info(e.getMessage());
+			throw new RuntimeException(e);
+		}
+		if (status == OperationStatus.SUCCESS) {
+			// Tuple tuple = tupleBinding.smartEntryToObject(new
+			// TupleInput(elementKey.getData()), new
+			// TupleInput(elementData.getData()), projectionFields);
+			// return tuple;
+			return getReconstractedTuple(elementKey, elementData);
+		}
+		logger.info("Current size : " + size + " " + RelationalTupleBinding.getSize());
 		return null;
 	}
 
-	private boolean isConditionFulfilled(AtomicValue value) {
-		if (condition == null)
-			throw new IllegalArgumentException("Condition can't be null");
-		if (value == null)
-			throw new IllegalArgumentException("Value can't be null");
-		value.getData();
-		return true;
-		//if (condition.getSign() == Condition.Sign.)
-	}
-	
 	public void close() {
 		try {
 			cursor.close();
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.info(e.getMessage());
+			throw new RuntimeException(e);
 		}
 	}
-
 }

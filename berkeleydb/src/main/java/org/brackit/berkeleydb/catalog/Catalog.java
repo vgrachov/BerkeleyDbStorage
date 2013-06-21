@@ -32,7 +32,6 @@ import java.io.FileNotFoundException;
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.CatalogTupleBinding;
 import org.brackit.berkeleydb.binding.IndexValueCreator;
-import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
 import org.brackit.berkeleydb.exception.KeyDuplicationException;
 import org.brackit.relational.api.ICatalog;
@@ -113,11 +112,10 @@ public final class Catalog implements ICatalog {
 		databaseConfig.setType(DatabaseType.BTREE);
 		databaseConfig.setPageSize(RelationalStorageProperties.getPageSize());
 		Database primaryDatabase = environment.openDatabase(null, schema.getDatabaseName(), null, databaseConfig);
-		RelationalTupleBinding relationalTupleBinding = new RelationalTupleBinding(schema.getColumns());
 		SecondaryConfig secondaryConfig = BerkeleyDBEnvironment.getDefaultSecondDatabaseConfig(true);
 		for (int i=0;i<schema.getColumns().length;i++)
 			if (schema.getColumns()[i].isDirectIndexExist()) {
-				IndexValueCreator indexValueCreator = new IndexValueCreator(schema, relationalTupleBinding, schema.getColumns()[i]);
+				IndexValueCreator indexValueCreator = new IndexValueCreator(schema, schema.getColumns()[i]);
 				SecondaryConfig indexDatabaseConfiguration = (SecondaryConfig)secondaryConfig.cloneConfig();
 				indexDatabaseConfiguration.setKeyCreator(indexValueCreator);
 				String indexDatabaseName = schema.getDatabaseName()+"_"+schema.getColumns()[i].getColumnName()+"_index";

@@ -30,9 +30,10 @@ package org.brackit.berkeleydb.cursor;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.mapping.TupleMapper;
+import org.brackit.berkeleydb.mapping.TupleMapper.KeyValuePair;
 import org.brackit.berkeleydb.transaction.BerkeleydbTransaction;
 import org.brackit.relational.api.IDatabaseAccess;
 import org.brackit.relational.api.cursor.Condition;
@@ -44,7 +45,6 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
 import com.google.common.base.Preconditions;
-import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
@@ -60,15 +60,12 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 	
 	protected final Database dataBase;
 	protected final Schema schema;
-	protected final RelationalTupleBinding tupleBinding;
-	public static int sizeValue = 0;
-	public static int sizeKey = 0;
+	private final TupleMapper fieldValuesMapper;
 	
 	public BerkeleydbDatabaseAccess(String databaseName){
 		this.dataBase = BerkeleyDBEnvironment.getInstance().getDatabasereference(databaseName);
 		this.schema = Catalog.getInstance().getSchemaByDatabaseName(databaseName);
-		this.tupleBinding = new RelationalTupleBinding(schema.getColumns());
-
+		this.fieldValuesMapper = new TupleMapper(schema);
 	}
 	
 	private boolean validation(ITransaction transaction){
@@ -82,19 +79,17 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		boolean validation = validation(transaction);
 		if (!validation)
 			return false;
-		TupleOutput serializedTupleValues = new TupleOutput();
-		TupleOutput serializedKey = new TupleOutput();
-		tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValues);
-		sizeKey += serializedKey.toByteArray().length;
-		sizeValue += serializedTupleValues.toByteArray().length;
+		//TupleOutput serializedTupleValues = new TupleOutput();
+		//TupleOutput serializedKey = new TupleOutput();
+		//tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValues);
+		KeyValuePair serializedTuple = fieldValuesMapper.mapTupleToKeyValue(tuple);
 		try {
 			//TODO:review put 
 			OperationStatus status = null;
 			if (transaction == null)
-				status = dataBase.put(null, new DatabaseEntry(serializedKey.toByteArray()), new DatabaseEntry(serializedTupleValues.toByteArray()));
+				status = dataBase.put(null, new DatabaseEntry(serializedTuple.getKey()), new DatabaseEntry(serializedTuple.getValue()));
 			else
-				status = dataBase.put(((BerkeleydbTransaction)transaction).getTransaction(), new DatabaseEntry(serializedKey.toByteArray()), 
-						new DatabaseEntry(serializedTupleValues.toByteArray()));
+				status = dataBase.put(((BerkeleydbTransaction)transaction).getTransaction(), new DatabaseEntry(serializedTuple.getKey()), new DatabaseEntry(serializedTuple.getValue()));
 			if (status != OperationStatus.SUCCESS)
 				logger.debug(status);
 		} catch (DatabaseException e) {
@@ -110,15 +105,13 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		boolean validation = validation(transaction);
 		if (!validation)
 			return false;
-		TupleOutput serializedTupleValue = new TupleOutput();
-		TupleOutput serializedKey = new TupleOutput();
-		tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValue);
+		KeyValuePair serializedTuple = fieldValuesMapper.mapTupleToKeyValue(tuple);
 		try {
 			OperationStatus status = null;
 			if (transaction == null)
-				status = dataBase.delete(null, new DatabaseEntry(serializedKey.toByteArray()));
+				status = dataBase.delete(null, new DatabaseEntry(serializedTuple.getKey()));
 			else
-				status = dataBase.delete(((BerkeleydbTransaction)transaction).getTransaction(), new DatabaseEntry(serializedKey.toByteArray()));
+				status = dataBase.delete(((BerkeleydbTransaction)transaction).getTransaction(), new DatabaseEntry(serializedTuple.getKey()));
 			if (status == OperationStatus.SUCCESS)
 				return true;
 			else
@@ -137,9 +130,9 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 			return null;
 		FullTableScanCursor fullTableScanCursor = null;
 		if (transaction == null)
-			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),null, projectionFields);
+			fullTableScanCursor = new FullTableScanCursor(schema, null, projectionFields);
 		else
-			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
+			fullTableScanCursor = new FullTableScanCursor(schema, ((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
 		return fullTableScanCursor;
 	}
 
@@ -150,9 +143,9 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 			return null;
 		FullTableScanCursor fullTableScanCursor = null;
 		if (transaction == null)
-			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),null, condition, projectionFields);
+			fullTableScanCursor = new FullTableScanCursor(schema, null, condition, projectionFields);
 		else
-			fullTableScanCursor = new FullTableScanCursor(schema.getDatabaseName(),((BerkeleydbTransaction)transaction).getTransaction(), condition, projectionFields);
+			fullTableScanCursor = new FullTableScanCursor(schema, ((BerkeleydbTransaction)transaction).getTransaction(), condition, projectionFields);
 		return fullTableScanCursor;
 	}
 	
@@ -163,9 +156,9 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 			return null;
 		RangeIndexSearchCursor rangeIndexSearchCursor = null;
 		if (transaction == null)
-			rangeIndexSearchCursor = new RangeIndexSearchCursor(column,leftKey,rightKey,null);
+			rangeIndexSearchCursor = new RangeIndexSearchCursor(schema, column, leftKey, rightKey, null);
 		else
-			rangeIndexSearchCursor = new RangeIndexSearchCursor(column,leftKey,rightKey,((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
+			rangeIndexSearchCursor = new RangeIndexSearchCursor(schema, column, leftKey, rightKey, ((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
 		return rangeIndexSearchCursor;
 	}
 
@@ -176,22 +169,9 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 			return null;
 		FullIndexCursor fullIndexCursor = null;
 		if (transaction == null)
-			fullIndexCursor = new FullIndexCursor(column,null,projectionFields);
+			fullIndexCursor = new FullIndexCursor(schema, column, null, projectionFields);
 		else
-			fullIndexCursor = new FullIndexCursor(column,((BerkeleydbTransaction)transaction).getTransaction(),projectionFields);
+			fullIndexCursor = new FullIndexCursor(schema, column, ((BerkeleydbTransaction)transaction).getTransaction(),projectionFields);
 		return fullIndexCursor;
-	}
-
-	public ITupleCursor getEqualMatchIndexSearchCursor(Column column, AtomicValue value, ITransaction transaction, Set<String> projectionFields) {
-		Preconditions.checkNotNull(projectionFields);
-		boolean validation = validation(transaction);//TODO: check whether index exists
-		if (!validation)
-			return null;
-		EqualMatchIndexSearchCursor equalMatchIndexSearchCursor = null;
-		if (transaction == null)
-			equalMatchIndexSearchCursor = new EqualMatchIndexSearchCursor(schema.getDatabaseName(), column, value, null, projectionFields);
-		else
-			equalMatchIndexSearchCursor = new EqualMatchIndexSearchCursor(schema.getDatabaseName(), column, value,((BerkeleydbTransaction)transaction).getTransaction(), projectionFields);
-		return equalMatchIndexSearchCursor;
 	}
 }

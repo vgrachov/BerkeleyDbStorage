@@ -28,20 +28,16 @@
 package org.brackit.berkeleydb.environment;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.binding.IndexValueCreator;
-import org.brackit.berkeleydb.binding.RelationalTupleBinding;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.Column;
@@ -50,13 +46,11 @@ import org.brackit.relational.properties.RelationalStorageProperties;
 import com.sleepycat.db.CheckpointConfig;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseConfig;
-import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
 import com.sleepycat.db.DatabaseType;
 import com.sleepycat.db.Environment;
 import com.sleepycat.db.EnvironmentConfig;
 import com.sleepycat.db.LockDetectMode;
-import com.sleepycat.db.LockMode;
 import com.sleepycat.db.SecondaryConfig;
 import com.sleepycat.db.SecondaryDatabase;
 
@@ -188,12 +182,10 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 				e2.printStackTrace();
 			}
 			Schema schema = Catalog.getInstance().getSchemaByDatabaseName(databaseName);
-			RelationalTupleBinding relationalTupleBinding = new RelationalTupleBinding(schema.getColumns());
-			
 			for (int i=0;i<schema.getColumns().length;i++){
 				if (schema.getColumns()[i].isDirectIndexExist()){
 					SecondaryConfig secondaryConfig = (SecondaryConfig)getDefaultSecondDatabaseConfig(true).cloneConfig();
-					IndexValueCreator indexValueCreator = new IndexValueCreator(schema, relationalTupleBinding, schema.getColumns()[i]);
+					IndexValueCreator indexValueCreator = new IndexValueCreator(schema, schema.getColumns()[i]);
 					String indexDatabaseName = null;
 					indexDatabaseName = databaseName+"_"+schema.getColumns()[i].getColumnName()+"_index";
 					secondaryConfig.setKeyCreator(indexValueCreator);

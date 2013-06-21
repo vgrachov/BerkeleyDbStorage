@@ -32,6 +32,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
@@ -68,13 +69,14 @@ public class Lineitem_Table_Iterator{
 		}
 		logger.info(System.currentTimeMillis() - startTime);
 	}*/
-	
-	@Test
+		
+	/*@Test
 	public void fullIterator() throws TransactionException{
 		logger.debug("Full scan");
 		ITransaction transaction = beginTransaction();
 		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction,
-				ImmutableSet.of("l_shipdate"));
+				ImmutableSet.of("l_orderkey", "l_partkey", "l_suppkey", "l_linenumber", "l_quantity", "l_extendedprice", "l_discount", "l_tax", 
+						"l_returnflag", "l_linestatus", "l_shipdate", "l_commitdate", "l_receiptdate", "l_shipinstruct", "l_shipmode", "l_comment"));
 		long start = System.currentTimeMillis();
 		cursor.open();
 		Tuple tuple = null;
@@ -83,7 +85,7 @@ public class Lineitem_Table_Iterator{
 		while ((tuple = cursor.next())!=null){
 			logger.debug(tuple);
 			if (i%100000==0) {
-				logger.debug(i);
+				//logger.debug(i);
 				//logger.debug(tuple.getFields()[15]);
 			}
 		
@@ -95,33 +97,15 @@ public class Lineitem_Table_Iterator{
 		commit(transaction);
 		logger.info("Size : "+tuples.size());
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
-	}
-
-	/*@Test
-	public void fullIterator1() throws TransactionException{
-		logger.debug("Full scan");
-		ITransaction transaction = beginTransaction();
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullScanCursor(transaction);
-		long start = System.currentTimeMillis();
-		cursor.open();
-		Tuple tuple = null;
-		int i=0;
-		while ((tuple = cursor.next())!=null){
-			if (i%100000==0)
-				logger.debug(i);
-			i++;
-		}
-		cursor.close();
-		commit(transaction);
-		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
 	}*/
 	
-	/*@Test
+	@Test
 	public void fullIndexIterator() throws TransactionException, IOException {
 		logger.debug("Full index scan");
 		ITransaction transaction = beginTransaction();
+
 		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(tableName);
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullIndexCursor(schema.getColumns()[10], transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getFullIndexCursor(schema.getColumns()[10], transaction, ImmutableSet.of("l_shipdate"));
 		long start = System.currentTimeMillis();
 		cursor.open();
 		Tuple tuple = null;
@@ -134,7 +118,7 @@ public class Lineitem_Table_Iterator{
 		cursor.close();
 		commit(transaction);
 		logger.info("Full scan time "+(System.currentTimeMillis()-start)+" "+i);
-	}*/
+	}
 
 	/*@Test
 	public void rangeSearch() throws TransactionException{
@@ -144,7 +128,8 @@ public class Lineitem_Table_Iterator{
 		SimpleDateFormat dateFormat = new SimpleDateFormat(RelationalStorageProperties.getDatePattern());
 		AtomicDouble leftRange = new AtomicDouble("l_discount", 0.02);
 		AtomicDouble rightRange = new AtomicDouble("l_discount", 0.03);
-		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getRangeIndexScanCursor(schema.getColumns()[6], leftRange, rightRange, transaction);
+		ITupleCursor cursor = DatabaseAccessFactory.getInstance().create(tableName).getRangeIndexScanCursor(schema.getColumns()[6], leftRange, rightRange, transaction, 
+				ImmutableSet.of("l_orderkey", "l_partkey", "l_suppkey", "l_linenumber", "l_quantity", "l_extendedprice", "l_discount", "l_tax", "l_returnflag", "l_linestatus", "l_shipdate", "l_commitdate", "l_receiptdate", "l_shipinstruct", "l_shipmode", "l_comment"));
 		long start = System.currentTimeMillis();
 		cursor.open();
 		Tuple tuple = null;

@@ -50,6 +50,8 @@ public class RelationalTupleBinding {
 	
 	private final Column[] schema;
 	
+	private static int size = 0;
+	
 	public RelationalTupleBinding(Column[] schema){
 		logger.debug("RDBMSTupleBinding is created");
 		this.schema = schema.clone();
@@ -70,28 +72,38 @@ public class RelationalTupleBinding {
 			Column currentColumn = schema[i];
 			if (currentColumn.getType()==ColumnType.String) {
 				String data = target.readString();
-				if (projectionFields.contains(currentColumn.getColumnName()))
+				if (projectionFields.contains(currentColumn.getColumnName())) {
 					fields[columnIndex++] = new AtomicString(currentColumn.getColumnName(), data);
+					size += data.getBytes().length;
+				}
 			} else
 			if (currentColumn.getType()==ColumnType.Integer) {
 				int data = target.readInt();
-				if (projectionFields.contains(currentColumn.getColumnName()))
+				if (projectionFields.contains(currentColumn.getColumnName())) {
 					fields[columnIndex++] = new AtomicInteger(currentColumn.getColumnName(), data);
+					size += 4;
+				}
 			} else
 			if (currentColumn.getType()==ColumnType.Double) {
 				double data = target.readDouble();
-				if (projectionFields.contains(currentColumn.getColumnName()))
+				if (projectionFields.contains(currentColumn.getColumnName())) {
 					fields[columnIndex++] = new AtomicDouble(currentColumn.getColumnName(), data);
+					size += 8;
+				}
 			} else
 			if (currentColumn.getType()==ColumnType.Char) {
 				char data = target.readChar();
-				if (projectionFields.contains(currentColumn.getColumnName()))
+				if (projectionFields.contains(currentColumn.getColumnName())) {
 					fields[columnIndex++] = new AtomicChar(currentColumn.getColumnName(), data);
+					size += 2;
+				}
 			} else
 			if (currentColumn.getType()==ColumnType.Date) {
 				long data = target.readLong();
-				if (projectionFields.contains(currentColumn.getColumnName()))
+				if (projectionFields.contains(currentColumn.getColumnName())) {
 					fields[columnIndex++] = new AtomicDate(currentColumn.getColumnName(), data);
+					size += 8;
+				}
 			} else
 				throw new IllegalArgumentException("Type is not supported");
 		}
@@ -121,5 +133,9 @@ public class RelationalTupleBinding {
 			if (schema[i].getType() == ColumnType.Date)
 				target.writeLong((Long)fields[i].getData());
 		}
+	}
+	
+	public static int getSize() {
+		return size;
 	}
 }

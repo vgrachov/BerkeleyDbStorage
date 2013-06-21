@@ -25,33 +25,45 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.relational.api;
 
+package org.brackit.berkeleydb.cursor;
 
 import java.util.Set;
 
-import org.brackit.relational.api.cursor.Condition;
+import org.brackit.berkeleydb.mapping.TupleMapper;
 import org.brackit.relational.api.cursor.ITupleCursor;
-import org.brackit.relational.api.transaction.ITransaction;
+import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicValue;
-import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
-public interface IDatabaseAccess {
+import com.sleepycat.db.DatabaseEntry;
+import com.sleepycat.db.Transaction;
 
-	boolean insert(Tuple tuple, ITransaction transaction);
-	
-	//TODO: implement
-	//boolean update(DatabaseEntry key, DatabaseEntry value);
-	
-	boolean delete(Tuple tuple, ITransaction transaction);
-	
-	ITupleCursor getFullScanCursor(ITransaction transaction, Set<String> projectionFields);
+/**
+ * Provides facility for reconstruction Tuple from key-value pairs
+ */
+public abstract class AbstractCursor implements ITupleCursor{
 
-	ITupleCursor getFullScanCursor(ITransaction transaction, Condition condition, Set<String> projectionFields);
+	protected final Set<String> projectionFields;
+	protected final Schema schema;
+	protected final TupleMapper tupleMapper;
+	protected final Transaction transaction;
 	
-	ITupleCursor getFullIndexCursor(Column column, ITransaction transaction, Set<String> projectionFields);
+	protected AbstractCursor(Schema schema, Set<String> projectionFields, Transaction transaction) {
+		this.projectionFields = projectionFields;
+		this.schema = schema;
+		this.transaction = transaction;
+		this.tupleMapper = new TupleMapper(schema);
+	}
 	
-	ITupleCursor getRangeIndexScanCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, ITransaction transaction, Set<String> projectionFields);
-	
+	protected Tuple getReconstractedTuple(DatabaseEntry key, DatabaseEntry value) {
+		AtomicValue[] fields = new AtomicValue[projectionFields.size()];
+		int index = 0;
+		for (int i=0; i<schema.getColumns().length; i++) {
+			if (projectionFields.contains(schema.getColumns()[i].getColumnName())) {
+				fields[index++] = tupleMapper.getValueByFieldName(schema.getColumns()[i].getColumnName(), key.getData(), value.getData());
+			}
+		}
+		return new Tuple(fields);
+	}
 }

@@ -27,6 +27,7 @@
  ******************************************************************************/
 package org.brackit.berkeleydb.binding;
 
+import org.brackit.berkeleydb.mapping.TupleMapper;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.AtomicChar;
 import org.brackit.relational.metadata.tuple.AtomicDate;
@@ -36,9 +37,7 @@ import org.brackit.relational.metadata.tuple.AtomicString;
 import org.brackit.relational.metadata.tuple.AtomicValue;
 import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.ColumnType;
-import org.brackit.relational.metadata.tuple.Tuple;
 
-import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.SecondaryDatabase;
@@ -46,45 +45,37 @@ import com.sleepycat.db.SecondaryKeyCreator;
 
 public final class IndexValueCreator implements SecondaryKeyCreator {
 	
-	private final RelationalTupleBinding tupleBinding;
 	private final Column index;
-	private final Schema schema;
+	private final TupleMapper tupleMapper;
 	
-	public IndexValueCreator(Schema schema,  RelationalTupleBinding tupleBinding, Column index){
-		this.schema = schema;
-		this.tupleBinding = tupleBinding;
+	public IndexValueCreator(Schema schema, Column index){
 		this.index = index;
+		this.tupleMapper = new TupleMapper(schema);
 	}
 	
 	public boolean createSecondaryKey(SecondaryDatabase secondary,
-			DatabaseEntry key, DatabaseEntry data, DatabaseEntry result) {
-		TupleInput keyInput = new TupleInput(key.getData());
-		TupleInput dataInput = new TupleInput(data.getData());
-		Tuple tuple = tupleBinding.smartEntryToObject(keyInput, dataInput, schema.getColumnsAsSet());
+			DatabaseEntry key, DatabaseEntry value, DatabaseEntry result) {
+		AtomicValue fieldValue = tupleMapper.getValueByFieldName(index.getColumnName(), key.getData(), value.getData());
 		TupleOutput resultSerialized = new TupleOutput();
-		AtomicValue[] fields = tuple.getFields();
-		for (int i=0;i<schema.getColumns().length;i++){
-			if (schema.getColumns()[i].getColumnName().equals(index.getColumnName())){
-				if (index.getType() == ColumnType.String)
-					resultSerialized.writeString(((AtomicString)fields[i]).getData());
-				else
-				if (index.getType() == ColumnType.Integer)
-					resultSerialized.writeInt(((AtomicInteger)fields[i]).getData());
-				else
-				if (index.getType() == ColumnType.Double)
-					resultSerialized.writeDouble(((AtomicDouble)fields[i]).getData());
-				else
-				if (index.getType() == ColumnType.Char)
-					resultSerialized.writeChar(((AtomicChar)fields[i]).getData());
-				else
-				if (index.getType() == ColumnType.Date)
-					resultSerialized.writeLong(((AtomicDate)fields[i]).getData());
-				else
-					throw new IllegalArgumentException("Can't create index for type "+index.getType());
-			}
-		}
+		
+		if (index.getType() == ColumnType.String)
+			resultSerialized.writeString(((AtomicString)fieldValue).getData());
+		else
+		if (index.getType() == ColumnType.Integer)
+			resultSerialized.writeInt(((AtomicInteger)fieldValue).getData());
+		else
+		if (index.getType() == ColumnType.Double)
+			resultSerialized.writeDouble(((AtomicDouble)fieldValue).getData());
+		else
+		if (index.getType() == ColumnType.Char)
+			resultSerialized.writeChar(((AtomicChar)fieldValue).getData());
+		else
+		if (index.getType() == ColumnType.Date)
+			resultSerialized.writeLong(((AtomicDate)fieldValue).getData());
+		else
+			throw new IllegalArgumentException("Can't create index for type "+index.getType());
+
 		result.setData(resultSerialized.toByteArray());
 		return true;
 	}
-
 }

@@ -29,15 +29,12 @@ package org.brackit.berkeleydb.cursor;
 
 import java.util.Set;
 
-import org.brackit.berkeleydb.binding.RelationalTupleBinding;
-import org.brackit.berkeleydb.catalog.Catalog;
+import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
-import org.brackit.relational.api.cursor.ITupleCursor;
 import org.brackit.relational.metadata.Schema;
 import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
-import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
@@ -46,77 +43,64 @@ import com.sleepycat.db.OperationStatus;
 import com.sleepycat.db.SecondaryCursor;
 import com.sleepycat.db.Transaction;
 
-public class FullIndexCursor implements ITupleCursor {
+public class FullIndexCursor extends AbstractCursor {
 
+	private static final Logger logger = Logger.getLogger(FullIndexCursor.class);
+	
 	private Column column;
 	private SecondaryCursor cursor;
 	private DatabaseEntry secondaryKey = new DatabaseEntry();
 	private DatabaseEntry primaryKey = new DatabaseEntry();
 	private DatabaseEntry primaryValue = new DatabaseEntry();
-	private RelationalTupleBinding tupleBinding;
 	private OperationStatus retVal = OperationStatus.NOTFOUND;
-	private final Transaction transaction;
-	private Set<String> projectionFields;
 	
-	FullIndexCursor(Column column, Transaction transaction, Set<String> projectionFields){
+	FullIndexCursor(Schema schema, Column column, Transaction transaction, Set<String> projectionFields){
+		super(schema, projectionFields, transaction);
 		this.column = column;
-		this.transaction = transaction;
-		this.projectionFields = projectionFields;
 	}
 	
 	public void open() {
-		Schema schema = Catalog.getInstance().getSchemaByDatabaseName(column.getDatabaseName());
 		try {
-			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, CursorConfig.DIRTY_READ);
+			cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(transaction, CursorConfig.DEFAULT);
 		} catch (DatabaseException e) {
-			e.printStackTrace();
+			logger.info(e.getMessage());
+			throw new RuntimeException(e);
 		}
-		tupleBinding = new RelationalTupleBinding(schema.getColumns());
 	}
 
 	public Tuple next() {
-		if (retVal == OperationStatus.NOTFOUND){
+		if (retVal == OperationStatus.NOTFOUND) {
 			try {
-				retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DIRTY_READ);
+				retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
 			} catch (DatabaseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.info(e.getMessage());
+				throw new RuntimeException(e);
 			}
-			if (retVal!=OperationStatus.NOTFOUND){
-				//TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
-				//TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
-				//return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
-				return new Tuple();
+			if (retVal != OperationStatus.NOTFOUND) {
+				return getReconstractedTuple(primaryKey, primaryValue);
 			}else
 				return null;
 		}else{
 			try {
-				retVal = cursor.getNextDup(secondaryKey, primaryKey, primaryValue, LockMode.DIRTY_READ);
+				retVal = cursor.getNextDup(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
 			} catch (DatabaseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.info(e.getMessage());
+				throw new RuntimeException(e);
 			}
-			if (retVal!=OperationStatus.NOTFOUND){
-				//TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
-				//TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
-				//return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
-				return new Tuple();
+			if (retVal != OperationStatus.NOTFOUND) {
+				return getReconstractedTuple(primaryKey, primaryValue);
 			}else{
 				try {
-					retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DIRTY_READ);
+					retVal = cursor.getNext(secondaryKey, primaryKey, primaryValue, LockMode.DEFAULT);
 				} catch (DatabaseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.info(e.getMessage());
+					throw new RuntimeException(e);
 				}
-				if (retVal!=OperationStatus.NOTFOUND){
-					//TupleInput foundKeySerialized = new TupleInput(primaryKey.getData());
-					//TupleInput foundDataSerialized = new TupleInput(primaryValue.getData());
-					//return tupleBinding.smartEntryToObject(foundKeySerialized, foundDataSerialized);
-					return new Tuple();
+				if (retVal != OperationStatus.NOTFOUND) {
+					return getReconstractedTuple(primaryKey, primaryValue);
 				}else
 					return null;
 			}
-			
 		}
 	}
 
@@ -124,10 +108,8 @@ public class FullIndexCursor implements ITupleCursor {
 		try {
 			cursor.close();
 		} catch (DatabaseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.info(e.getMessage());
+			throw new RuntimeException(e);
 		}
-		
 	}
-
 }
