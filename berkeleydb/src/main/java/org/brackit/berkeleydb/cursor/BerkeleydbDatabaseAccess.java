@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 import org.brackit.berkeleydb.catalog.Catalog;
 import org.brackit.berkeleydb.environment.BerkeleyDBEnvironment;
+import org.brackit.berkeleydb.exception.TupleFetchingException;
 import org.brackit.berkeleydb.mapping.TupleMapper;
 import org.brackit.berkeleydb.mapping.TupleMapper.KeyValuePair;
 import org.brackit.berkeleydb.transaction.BerkeleydbTransaction;
@@ -45,10 +46,15 @@ import org.brackit.relational.metadata.tuple.Column;
 import org.brackit.relational.metadata.tuple.Tuple;
 
 import com.google.common.base.Preconditions;
+import com.sleepycat.bind.tuple.TupleInput;
+import com.sleepycat.db.CursorConfig;
 import com.sleepycat.db.Database;
 import com.sleepycat.db.DatabaseEntry;
 import com.sleepycat.db.DatabaseException;
+import com.sleepycat.db.LockMode;
 import com.sleepycat.db.OperationStatus;
+import com.sleepycat.db.SecondaryCursor;
+import com.sleepycat.db.SecondaryDatabase;
 
 /**
  * Main interface for accessing BerkeleyDB data.
@@ -60,12 +66,12 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 	
 	protected final Database dataBase;
 	protected final Schema schema;
-	private final TupleMapper fieldValuesMapper;
+	private final TupleMapper tupleMapper;
 	
 	public BerkeleydbDatabaseAccess(String databaseName){
 		this.dataBase = BerkeleyDBEnvironment.getInstance().getDatabasereference(databaseName);
 		this.schema = Catalog.getInstance().getSchemaByDatabaseName(databaseName);
-		this.fieldValuesMapper = new TupleMapper(schema);
+		this.tupleMapper = new TupleMapper(schema);
 	}
 	
 	private boolean validation(ITransaction transaction){
@@ -79,10 +85,7 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		boolean validation = validation(transaction);
 		if (!validation)
 			return false;
-		//TupleOutput serializedTupleValues = new TupleOutput();
-		//TupleOutput serializedKey = new TupleOutput();
-		//tupleBinding.smartObjectToEntry(tuple, serializedKey, serializedTupleValues);
-		KeyValuePair serializedTuple = fieldValuesMapper.mapTupleToKeyValue(tuple);
+		KeyValuePair serializedTuple = tupleMapper.mapTupleToKeyValue(tuple);
 		try {
 			//TODO:review put 
 			OperationStatus status = null;
@@ -105,7 +108,7 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		boolean validation = validation(transaction);
 		if (!validation)
 			return false;
-		KeyValuePair serializedTuple = fieldValuesMapper.mapTupleToKeyValue(tuple);
+		KeyValuePair serializedTuple = tupleMapper.mapTupleToKeyValue(tuple);
 		try {
 			OperationStatus status = null;
 			if (transaction == null)
@@ -173,5 +176,37 @@ public class BerkeleydbDatabaseAccess implements IDatabaseAccess {
 		else
 			fullIndexCursor = new FullIndexCursor(schema, column, ((BerkeleydbTransaction)transaction).getTransaction(),projectionFields);
 		return fullIndexCursor;
+	}
+
+	public AtomicValue getMinFieldValue(Column column) {
+		return getBoundaryFieldValue(column, true);
+	}
+
+	public AtomicValue getMaxFieldValue(Column column) {
+		return getBoundaryFieldValue(column, false);
+	}
+	
+	private AtomicValue getBoundaryFieldValue(Column column, boolean isMin) {
+		Preconditions.checkNotNull(column);
+		Preconditions.checkArgument(column.isDirectIndexExist());
+		DatabaseEntry key = new DatabaseEntry();
+		DatabaseEntry primaryKey = new DatabaseEntry();
+		DatabaseEntry value = new DatabaseEntry();
+		try{ 
+			SecondaryCursor cursor = BerkeleyDBEnvironment.getInstance().getIndexreference(column).openSecondaryCursor(null, CursorConfig.DEFAULT);
+			OperationStatus status = null;
+			if (isMin) {
+				status = cursor.getFirst(key, primaryKey, value, LockMode.READ_COMMITTED);
+			} else {
+				status = cursor.getLast(key, primaryKey, value, LockMode.READ_COMMITTED);
+			}
+			if (status == OperationStatus.SUCCESS) {
+				return tupleMapper.getValueByFieldName(column.getColumnName(), primaryKey.getData(), value.getData());
+			} else {
+				throw new TupleFetchingException("Min value can't be evaluated for column "+column.getColumnName());
+			}
+		} catch (DatabaseException e) {
+			throw new TupleFetchingException(e);
+		}
 	}
 }

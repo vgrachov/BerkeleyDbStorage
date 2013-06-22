@@ -25,36 +25,16 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
-package org.brackit.relational.api;
 
+package org.brackit.berkeleydb.exception;
 
-import java.util.Set;
+public class TupleFetchingException extends RuntimeException{
 
-import org.brackit.relational.api.cursor.Condition;
-import org.brackit.relational.api.cursor.ITupleCursor;
-import org.brackit.relational.api.transaction.ITransaction;
-import org.brackit.relational.metadata.tuple.AtomicValue;
-import org.brackit.relational.metadata.tuple.Column;
-import org.brackit.relational.metadata.tuple.Tuple;
+	public TupleFetchingException(String message) {
+		super(message);
+	}
 
-public interface IDatabaseAccess {
-
-	boolean insert(Tuple tuple, ITransaction transaction);
-	
-	//TODO: implement
-	//boolean update(DatabaseEntry key, DatabaseEntry value);
-	
-	boolean delete(Tuple tuple, ITransaction transaction);
-	
-	ITupleCursor getFullScanCursor(ITransaction transaction, Set<String> projectionFields);
-
-	ITupleCursor getFullScanCursor(ITransaction transaction, Condition condition, Set<String> projectionFields);
-	
-	ITupleCursor getFullIndexCursor(Column column, ITransaction transaction, Set<String> projectionFields);
-	
-	ITupleCursor getRangeIndexScanCursor(Column column, AtomicValue leftKey, AtomicValue rightKey, ITransaction transaction, Set<String> projectionFields);
-	
-	AtomicValue getMinFieldValue(Column column);
-	
-	AtomicValue getMaxFieldValue(Column column);
+	public TupleFetchingException(Throwable cause) {
+		super(cause);
+	}
 }
