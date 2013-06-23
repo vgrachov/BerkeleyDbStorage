@@ -35,14 +35,20 @@ package org.brackit.relational.properties;
 public class RelationalStorageProperties {
 
 	// set storage path as JVM argument
-	private static final String storagePath = System.getProperty("berkeley_db_path");
+	private static final String storagePath = "/Users/vgrachov/Desktop/db_storage/100mb_mapper/";
+	//private static final String storagePath = "/Users/vgrachov/Desktop/db_storage/100mb_mapper/";
 
 	// set path to TBL files as JVM argument
-	private static final String tblPath = System.getProperty("tbl_path");
+	private static final String tblPath = "/Users/vgrachov/Desktop/db_storage/100mb/";
 
 	public enum StorageEngine{
 		BerkeleyDB,
 		LevelDB
+	}
+	
+	public enum MappingMode {
+		DefaultTupleInputOutput,
+		BStoreMapper
 	}
 	
 	private RelationalStorageProperties() {
@@ -74,6 +80,10 @@ public class RelationalStorageProperties {
 	}
 	
 	public static Integer getPageSize() {
-		return 32768;
+		return 65536;
+	}
+	
+	public static MappingMode getMappingMode() {
+		return MappingMode.BStoreMapper;
 	}
 }

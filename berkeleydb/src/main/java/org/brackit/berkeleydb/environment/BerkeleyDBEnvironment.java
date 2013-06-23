@@ -116,7 +116,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
         // detection. Also indicate that the transaction that has
         // performed the least amount of write activity to
         // receive the deadlock notification, if any.
-        environmentConfig.setLockDetectMode(LockDetectMode.MINWRITE);
+        //environmentConfig.setLockDetectMode(LockDetectMode.MINWRITE);
 
         // Specify in-memory logging
         //environmentConfig.setLogInMemory(true);
@@ -126,8 +126,11 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
         //environmentConfig.setLogBufferSize(10 * 1024 * 1024);
         // Specify the size of the in-memory cache
         // Set it large enough so that it won't page.
-        environmentConfig.setCacheSize(10 * 1024 * 1024);
+        
+        environmentConfig.setCacheSize(2000 * 1024 * 1024);
         environmentConfig.setLogAutoRemove(true);
+        environmentConfig.setSystemMemory(true);
+        environmentConfig.setPrivate(true);
         
         // Set the Berkeley DB Catalog config.
         DatabaseConfig catalogDBConfig = new DatabaseConfig();
@@ -168,6 +171,8 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 			logger.debug("Open database "+databaseName);
 			DatabaseConfig databaseConfig = new DatabaseConfig();
 			databaseConfig.setTransactional(true);
+			databaseConfig.setCacheSize(100 * 1024 * 1024);
+			databaseConfig.setPageSize(65536);
 			databaseConfig.setAllowCreate(false);
 			
 			Database db = null;
@@ -216,7 +221,7 @@ public final class BerkeleyDBEnvironment implements IBerkeleyDBEnvironment {
 		secondaryConfig.setAllowPopulate(!allowCreate);
 		secondaryConfig.setSortedDuplicates(true);
 		secondaryConfig.setType(DatabaseType.BTREE);
-		secondaryConfig.setPageSize(32768);
+		secondaryConfig.setPageSize(65536);
 		return secondaryConfig; 
 	}
 	
